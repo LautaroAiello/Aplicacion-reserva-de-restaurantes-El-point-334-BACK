@@ -8,6 +8,7 @@ import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.repositories.PlatoRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PlatoService {
@@ -24,6 +25,10 @@ public class PlatoService {
     // Listar platos por Restaurante ID
     public List<Plato> listarPlatosPorRestaurante(Long restauranteId) {
         return platoRepository.findByRestauranteId(restauranteId);
+    }
+
+    public Optional<Plato> buscarPorId(Long id) {
+        return platoRepository.findById(id);
     }
 
     // Crear un nuevo plato

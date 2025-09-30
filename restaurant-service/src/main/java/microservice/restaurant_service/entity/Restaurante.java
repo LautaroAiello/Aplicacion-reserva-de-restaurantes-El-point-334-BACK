@@ -1,6 +1,7 @@
 package microservice.restaurant_service.entity;
 
 import java.time.LocalTime;
+import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -30,8 +31,6 @@ public class Restaurante {
     @Column(name = "horario_cierre")
     private LocalTime horarioCierre;
 
-
-
     // 1. OneToOne con DIRECCION (FK: direccion_id)
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER) // EAGER para facilitar el acceso a la dirección
     @JoinColumn(name = "direccion_id", referencedColumnName = "id")
@@ -39,19 +38,18 @@ public class Restaurante {
 
     // 2. OneToOne con ENTIDAD_FISCAL (FK: entidad_fiscal_id)
     // Se usa la clase EntidadFiscal minimalista, aunque pertenezca conceptualmente a otro microservicio.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entidad_fiscal_id", referencedColumnName = "id")
-    private EntidadFiscal entidadFiscal;
+    @Column(name = "entidad_fiscal_id")
+    private Long entidad_fiscal_id;
 
-    // // 3. OneToOne con CONFIGURACION_RESTAURANTE (Mapeada en ConfiguracionRestaurante, con FK a Restaurante)
-    // @OneToOne(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private ConfiguracionRestaurante configuracion;
+    // 3. OneToOne con CONFIGURACION_RESTAURANTE (Mapeada en ConfiguracionRestaurante, con FK a Restaurante)
+    @OneToOne(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ConfiguracionRestaurante configuracion;
 
-    // // 4. OneToMany con MESA (Mapeada en Mesa, con FK a Restaurante)
-    // @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private Set<Mesa> mesas;
+    // 4. OneToMany con MESA (Mapeada en Mesa, con FK a Restaurante)
+    @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Mesa> mesas;
 
-    // // 5. OneToMany con PLATO (Mapeada en Plato, con FK a Restaurante)
-    // @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private Set<Plato> platos;
+    // 5. OneToMany con PLATO (Mapeada en Plato, con FK a Restaurante)
+    @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Plato> platos;
 }

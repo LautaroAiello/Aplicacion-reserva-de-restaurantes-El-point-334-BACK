@@ -18,3 +18,11 @@ CREATE TABLE usuario_restaurante_rol (
     rol VARCHAR(50) NOT NULL,
     CONSTRAINT uq_usuario_restaurante_rol UNIQUE (usuario_id, restaurante_id, rol)
 );
+
+-- Tabla ENTIDAD_FISCAL
+CREATE TABLE entidad_fiscal (
+    id BIGSERIAL PRIMARY KEY,
+    cuit VARCHAR(20) NOT NULL UNIQUE,
+    razon_social VARCHAR(255) NOT NULL,
+    validado BOOLEAN DEFAULT FALSE
+);

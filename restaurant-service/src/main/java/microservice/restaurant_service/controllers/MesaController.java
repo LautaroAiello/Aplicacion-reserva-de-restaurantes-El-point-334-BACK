@@ -11,7 +11,7 @@ import microservice.restaurant_service.services.MesaService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/restaurantes/{restauranteId}/mesas")
+@RequestMapping("/restaurantes/{restauranteId}/mesas")
 public class MesaController {
 
     private final MesaService mesaService;

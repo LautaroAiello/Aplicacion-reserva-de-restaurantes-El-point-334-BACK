@@ -11,7 +11,7 @@ import microservice.restaurant_service.services.PlatoService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/restaurantes/{restauranteId}/platos")
+@RequestMapping("/restaurantes/{restauranteId}/platos")
 public class PlatoController {
 
     private final PlatoService platoService;

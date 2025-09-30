@@ -1,4 +1,4 @@
-package microservice.restaurant_service.entity;
+package auth_service.microservice.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 

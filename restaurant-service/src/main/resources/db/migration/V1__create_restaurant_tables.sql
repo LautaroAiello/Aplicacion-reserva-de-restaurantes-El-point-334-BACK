@@ -10,14 +10,6 @@ CREATE TABLE direccion (
     longitud VARCHAR(50)
 );
 
--- Tabla ENTIDAD_FISCAL
-CREATE TABLE entidad_fiscal (
-    id BIGSERIAL PRIMARY KEY,
-    cuit VARCHAR(20) NOT NULL UNIQUE,
-    razon_social VARCHAR(255) NOT NULL,
-    validado BOOLEAN DEFAULT FALSE
-);
-
 -- Tabla RESTAURANTE
 CREATE TABLE restaurante (
     id BIGSERIAL PRIMARY KEY,
@@ -25,7 +17,7 @@ CREATE TABLE restaurante (
     activo BOOLEAN DEFAULT TRUE,
     direccion_id BIGINT REFERENCES direccion(id) ON DELETE SET NULL,
     telefono VARCHAR(20),
-    entidad_fiscal_id BIGINT REFERENCES entidad_fiscal(id) ON DELETE SET NULL,
+    entidad_fiscal_id BIGINT,
     horario_apertura TIME, -- Agregado según el diagrama
     horario_cierre TIME -- Agregado según el diagrama
 );
