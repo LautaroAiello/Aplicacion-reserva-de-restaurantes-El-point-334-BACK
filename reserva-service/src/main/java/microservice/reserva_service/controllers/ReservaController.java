@@ -1,6 +1,7 @@
 package microservice.reserva_service.controllers;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ public class ReservaController {
     public ReservaController(ReservaService reservaService) {
         this.reservaService = reservaService;
     }
-
+   
     @PostMapping
     public ResponseEntity<Reserva> crearReserva(@RequestBody Reserva reserva) {
         try {
@@ -33,7 +34,38 @@ public class ReservaController {
         List<Reserva> reservas = reservaService.obtenerTodas();
         return new ResponseEntity<>(reservas, HttpStatus.OK);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Reserva> obtenerPorId(@PathVariable Long id) {
+        try {
+            Reserva reserva = reservaService.obtenerPorId(id);
+            return new ResponseEntity<>(reserva, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404
+        }
+    }
     
 
-    // Otros endpoints: GET /{id}, PUT /{id}, DELETE /{id}
+    //  ENDPOINTS DE MODIFICACIÓN Y ELIMINACIÓN 
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<Reserva> actualizarReserva(@PathVariable Long id, @RequestBody Reserva reserva) {
+        try {
+            Reserva reservaActualizada = reservaService.actualizarReserva(id, reserva);
+            return new ResponseEntity<>(reservaActualizada, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarReserva(@PathVariable Long id) {
+        try {
+            reservaService.eliminarReserva(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Código 204
+        } catch (NoSuchElementException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404
+        }
+    }
+
 }
