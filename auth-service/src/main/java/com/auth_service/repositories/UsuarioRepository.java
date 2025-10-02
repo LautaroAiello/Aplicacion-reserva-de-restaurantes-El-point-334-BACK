@@ -1,6 +1,6 @@
-package auth_service.microservice.repositories;
+package com.auth_service.repositories;
 
-import auth_service.microservice.entity.Usuario;
+import com.auth_service.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long>{

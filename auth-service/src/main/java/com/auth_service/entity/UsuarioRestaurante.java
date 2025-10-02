@@ -1,4 +1,4 @@
-package auth_service.microservice.entity;
+package com.auth_service.entity;
 
 public class UsuarioRestaurante {
     

@@ -1,10 +1,10 @@
-package auth_service.microservice.controllers;
+package com.auth_service.controllers;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import auth_service.microservice.entity.Usuario;
-import auth_service.microservice.services.UsuarioService;
+import com.auth_service.entity.Usuario;
+import com.auth_service.services.UsuarioService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 

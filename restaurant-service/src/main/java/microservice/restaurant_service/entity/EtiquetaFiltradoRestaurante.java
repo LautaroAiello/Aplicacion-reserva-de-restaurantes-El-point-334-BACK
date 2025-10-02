@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
     @UniqueConstraint(columnNames = {"restaurante_id", "etiqueta_id"}, name = "uq_restaurante_etiqueta")
 })
 @Data
-@NoArgsConstructor // Necesario para JPA
+@NoArgsConstructor
 public class EtiquetaFiltradoRestaurante {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // BIGSERIAL -> Long
+    private Long id;
 
     // Relación ManyToOne con RESTAURANTE
     @ManyToOne(fetch = FetchType.LAZY)

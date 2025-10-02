@@ -1,11 +1,11 @@
-package auth_service.microservice.services;
+package com.auth_service.services;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import auth_service.microservice.entity.Usuario;
-import auth_service.microservice.repositories.UsuarioRepository;
+import com.auth_service.entity.Usuario;
+import com.auth_service.repositories.UsuarioRepository;
 
 @Service    
 public class UsuarioService {

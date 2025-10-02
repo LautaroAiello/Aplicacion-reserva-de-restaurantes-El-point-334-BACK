@@ -84,3 +84,11 @@ CREATE TABLE etiqueta_filtrado_restaurante (
     etiqueta_id BIGINT NOT NULL REFERENCES etiqueta(id) ON DELETE CASCADE,
     CONSTRAINT uq_restaurante_etiqueta UNIQUE (restaurante_id, etiqueta_id)
 );
+
+-- Tabla ENTIDAD_FISCAL
+CREATE TABLE entidad_fiscal (
+    id BIGSERIAL PRIMARY KEY,
+    cuit VARCHAR(20) NOT NULL UNIQUE,
+    razon_social VARCHAR(255) NOT NULL,
+    validado BOOLEAN DEFAULT FALSE
+);

@@ -1,4 +1,4 @@
-package auth_service.microservice.entity;
+package com.auth_service.entity;
 
 import java.time.LocalDateTime;
 
