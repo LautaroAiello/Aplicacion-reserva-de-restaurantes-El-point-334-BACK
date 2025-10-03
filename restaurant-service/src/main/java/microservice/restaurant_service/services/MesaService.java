@@ -47,4 +47,8 @@ public class MesaService {
     public void eliminarMesa(Long id) {
         mesaRepository.deleteById(id);
     }
+
+    public Optional<Mesa> obtenerMesaId(Long id) {
+        return mesaRepository.findById(id);
+    }
 }

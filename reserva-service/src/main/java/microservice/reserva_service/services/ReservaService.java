@@ -8,6 +8,12 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import microservice.reserva_service.services.dto.UsuarioDTO;
+import microservice.reserva_service.services.feign.UsuarioFeign;
+import microservice.reserva_service.services.feign.RestauranteFeign;
+import microservice.reserva_service.services.dto.MesaDTO;
+import microservice.reserva_service.services.dto.RestauranteDTO;
+
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.entity.ReservaMesa;
 import microservice.reserva_service.repositories.ReservaRepository;
@@ -15,9 +21,13 @@ import microservice.reserva_service.repositories.ReservaRepository;
 @Service
 public class ReservaService {
     private ReservaRepository reservaRepository;
+    private UsuarioFeign usuarioFeign;
+    private RestauranteFeign restauranteFeign;
 
-    public ReservaService(ReservaRepository reservaRepository){
+    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign){
         this.reservaRepository = reservaRepository;
+        this.usuarioFeign = usuarioFeign;
+        this.restauranteFeign = restauranteFeign;
     }
 
     public List<Reserva> obtenerTodas(){
@@ -31,26 +41,58 @@ public class ReservaService {
 
     @Transactional
     public Reserva crearReserva(Reserva reserva) {
+        //Obtenemos usuarioId y restauranteId de la reserva
+        Long userId = reserva.getUsuarioId();
+        Long restauranteId = reserva.getRestauranteId();
+        
         // Validar que la fecha y hora no sean en el pasado
         if (reserva.getFechaHora().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("No se puede crear una reserva en el pasado.");
         }
+
+        // --- 1. VALIDACIÓN DE EXISTENCIA DE RECURSOS (ORQUESTACIÓN) ---
+
+        // Validar que el usuario exista en el Auth Service
+        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
+        if (usuario == null) {
+             throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
+        }
+        
+        // Validar que el restaurante exista en el Restaurant Service
+        RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(restauranteId);
+        if (restaurante == null) {
+            throw new RuntimeException("Restaurante con ID " + restauranteId + " no encontrado.");
+        }
+
+        // Validar que la reserva incluya al menos una mesa
+        if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
+             throw new RuntimeException("La reserva debe incluir al menos una mesa.");
+        }
+
+        for (ReservaMesa rm : reserva.getMesasReservadas()) {
+            Long mesaId = rm.getMesaId();
+            // Llama al Feign Client con ambos IDs para validar la pertenencia
+            MesaDTO mesa = restauranteFeign.obtenerMesaPorIdYRestaurante(restauranteId, mesaId);
+            
+            if (mesa == null) {
+                 throw new RuntimeException("Mesa con ID " + mesaId + " no existe o no pertenece al Restaurante " + restauranteId + ".");
+            }
+            // Establece la relación bidireccional (esto lo tenías bien)
+            rm.setReserva(reserva); 
+        }
+
+        // --- 2. LÓGICA DE NEGOCIO Y DISPONIBILIDAD ---
+        
         // 1. Lógica de Negocio (Ej: Verificar disponibilidad de mesas - Opcional por ahora)
         boolean disponible = verificarDisponibilidad(reserva.getRestauranteId(), reserva.getFechaHora(), reserva.getCantidadPersonas());
         if (!disponible) throw new RuntimeException("No hay mesas disponibles para la fecha y cantidad de personas solicitadas.");
-
-
-        // 2. Establecer la fecha de creación y estado inicial
+        
+        
+        
+        // 3. ESTABLECER FECHA DE CREACIÓN Y ESTADO INICIAL
         reserva.setFechaCreacion(LocalDateTime.now());
         if (reserva.getEstado() == null) {
             reserva.setEstado("PENDIENTE"); 
-        }
-
-        // 3. Vincular la reserva con sus mesas (si la lista no está vacía)
-        if (reserva.getMesasReservadas() != null) {
-            for (ReservaMesa rm : reserva.getMesasReservadas()) {
-                rm.setReserva(reserva); // Establece la relación bidireccional
-            }
         }
 
         return reservaRepository.save(reserva);

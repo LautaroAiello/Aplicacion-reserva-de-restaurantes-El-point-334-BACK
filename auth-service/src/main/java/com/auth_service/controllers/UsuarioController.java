@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -24,13 +25,18 @@ public class UsuarioController {
 
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
-        return usuarioService.saveUsuario(usuario);
+        return usuarioService.guardarUsuario(usuario);
     }
     
     @GetMapping
     public List<Usuario> getAllUsuarios() {
         return usuarioService.getAllUsuarios();
     }
+
+    @GetMapping("/{id}")
+    public Usuario getUsuarioById(@PathVariable Long id) {
+        return usuarioService.getUsuarioById(id).orElse(null);
+    }   
     
 
 }

@@ -26,6 +26,15 @@ public class MesaController {
         return mesaService.listarMesasPorRestaurante(restauranteId);
     }
 
+    // Nuevo GET para obtener una sola mesa:
+    // GET /v1/restaurantes/{restauranteId}/mesas/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<Mesa> obtenerMesaPorId(@PathVariable Long restauranteId, @PathVariable Long id) {
+        return mesaService.obtenerMesaId(id)
+            .map(mesa->ResponseEntity.ok(mesa))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     // POST /v1/restaurantes/{restauranteId}/mesas
     @PostMapping
     public ResponseEntity<?> crearMesa(@PathVariable Long restauranteId, @RequestBody Mesa mesa) {
