@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import microservice.reserva_service.services.dto.UsuarioDTO;
 
-@FeignClient(name = "USER-SERVICE")
+@FeignClient(name = "AUTH-SERVICE")
 public interface UsuarioFeign {
     
 

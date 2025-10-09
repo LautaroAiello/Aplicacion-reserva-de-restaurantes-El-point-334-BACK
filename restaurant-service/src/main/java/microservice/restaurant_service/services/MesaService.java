@@ -29,7 +29,7 @@ public class MesaService {
     // Crear una nueva mesa (debe estar vinculada a un restaurante existente)
     public Mesa guardarMesa(Long restauranteId, Mesa mesa) {
         // Lógica de negocio: 1. Verificar si el restaurante existe
-        Optional<Restaurante> restauranteOpt = restauranteService.buscarPorId(restauranteId);
+        Optional<Restaurante> restauranteOpt = restauranteService.obtenerRestaurantePorId(restauranteId);
 
         if (restauranteOpt.isPresent()) {
             mesa.setRestaurante(restauranteOpt.get());

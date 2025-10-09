@@ -5,6 +5,7 @@ import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 @Entity
 @Table(name = "restaurante")
@@ -47,9 +48,11 @@ public class Restaurante {
 
     // 4. OneToMany con MESA (Mapeada en Mesa, con FK a Restaurante)
     @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private Set<Mesa> mesas;
 
     // 5. OneToMany con PLATO (Mapeada en Plato, con FK a Restaurante)
     @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private Set<Plato> platos;
 }

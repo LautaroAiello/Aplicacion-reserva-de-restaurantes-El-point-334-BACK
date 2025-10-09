@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "plato")
 @Data
@@ -18,6 +20,7 @@ public class Plato {
     // 1. Relación ManyToOne con RESTAURANTE
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurante_id", nullable = false)
+    @JsonIgnore
     private Restaurante restaurante;
 
     // 2. Relación ManyToOne con CATEGORIA_PLATO

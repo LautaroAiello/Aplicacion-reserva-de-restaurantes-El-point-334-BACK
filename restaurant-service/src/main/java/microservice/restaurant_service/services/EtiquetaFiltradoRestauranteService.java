@@ -34,7 +34,7 @@ public class EtiquetaFiltradoRestauranteService {
     // Método principal: ASOCIAR una etiqueta como filtro al restaurante
     public EtiquetaFiltradoRestaurante asociarEtiquetaFiltro(Long restauranteId, Long etiquetaId) {
         // 1. Validar existencia del Restaurante
-        Restaurante restaurante = restauranteService.buscarPorId(restauranteId)
+        Restaurante restaurante = restauranteService.obtenerRestaurantePorId(restauranteId)
             .orElseThrow(() -> new RuntimeException("Restaurante no encontrado con ID: " + restauranteId));
 
         // 2. Validar existencia de la Etiqueta

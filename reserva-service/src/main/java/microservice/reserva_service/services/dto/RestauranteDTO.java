@@ -1,10 +1,26 @@
 package microservice.reserva_service.services.dto;
 
+import java.time.LocalTime;
+
 public class RestauranteDTO {
     private Long id;
     private String nombre;
     private String direccion;
+    private LocalTime horarioApertura;
+    private LocalTime horarioCierre;
     
+    public LocalTime getHorarioApertura() {
+        return horarioApertura;
+    }
+    public void setHorarioApertura(LocalTime horarioApertura) {
+        this.horarioApertura = horarioApertura;
+    }
+    public LocalTime getHorarioCierre() {
+        return horarioCierre;
+    }
+    public void setHorarioCierre(LocalTime horarioCierre) {
+        this.horarioCierre = horarioCierre;
+    }
     public Long getId() {
         return id;
     }

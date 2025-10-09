@@ -26,6 +26,9 @@ public class Reserva {
 
     @Column(name = "estado", nullable = false, length = 50)
     private String estado;
+    
+    @Column(name = "tipo", nullable = false, length = 50)
+    private String tipo;
 
     private String observaciones; 
 
@@ -45,6 +48,14 @@ public class Reserva {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 
     public Long getUsuarioId() {

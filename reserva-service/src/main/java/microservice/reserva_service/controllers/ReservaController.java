@@ -25,6 +25,7 @@ public class ReservaController {
             Reserva nuevaReserva = reservaService.crearReserva(reserva);
             return new ResponseEntity<>(nuevaReserva, HttpStatus.CREATED);
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }

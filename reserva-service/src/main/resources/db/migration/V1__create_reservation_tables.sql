@@ -9,6 +9,7 @@ CREATE TABLE reserva (
     cantidad_personas INT NOT NULL,
     estado VARCHAR(50) NOT NULL, -- Ej: PENDIENTE, CONFIRMADA, CANCELADA, FINALIZADA
     observaciones TEXT,
+    tipo VARCHAR(50) NOT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

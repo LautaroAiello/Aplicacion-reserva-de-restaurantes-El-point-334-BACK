@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.services.RestauranteService;
 
@@ -35,8 +36,8 @@ public class RestauranteController {
 
     // GET /restaurantes/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<Restaurante> obtenerPorId(@PathVariable Long id) {
-        return restauranteService.buscarPorId(id)
+    public ResponseEntity<RestauranteDTO> obtenerPorId(@PathVariable Long id) {
+        return restauranteService.obtenerRestauranteDTOPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -45,7 +46,7 @@ public class RestauranteController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Restaurante crearRestaurante(@RequestBody Restaurante restaurante) {
-        return restauranteService.guardarRestaurante(restaurante);
+        return restauranteService.crearRestaurante(restaurante);
     }
 
     // PUT /restaurantes/{id}
@@ -63,7 +64,7 @@ public class RestauranteController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> eliminarRestaurante(@PathVariable Long id) {
-        if (restauranteService.buscarPorId(id).isPresent()) {
+        if (restauranteService.obtenerRestaurantePorId(id).isPresent()) {
             restauranteService.eliminarRestaurante(id);
             return ResponseEntity.noContent().build();
         }

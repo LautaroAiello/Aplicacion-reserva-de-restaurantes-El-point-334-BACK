@@ -1,5 +1,7 @@
 package microservice.restaurant_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,6 +22,7 @@ public class EtiquetaFiltradoRestaurante {
     // Relación ManyToOne con RESTAURANTE
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurante_id", nullable = false)
+    @JsonIgnore
     private Restaurante restaurante;
 
     // Relación ManyToOne con ETIQUETA

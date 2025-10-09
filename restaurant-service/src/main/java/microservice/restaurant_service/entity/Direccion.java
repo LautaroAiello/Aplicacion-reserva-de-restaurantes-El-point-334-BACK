@@ -33,6 +33,4 @@ public class Direccion {
 
     @Column(name = "longitud", length = 50)
     private String longitud;
-
-    // Nota: La relación OneToOne con Restaurante se mapea en Restaurante
 }

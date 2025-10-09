@@ -34,7 +34,7 @@ public class PlatoService {
     // Crear un nuevo plato
     public Plato guardarPlato(Long restauranteId, Plato plato) {
         // Lógica de negocio: 1. Verificar si el restaurante existe
-        Restaurante restaurante = restauranteService.buscarPorId(restauranteId)
+        Restaurante restaurante = restauranteService.obtenerRestaurantePorId(restauranteId)
             .orElseThrow(() -> new RuntimeException("Restaurante no encontrado con ID: " + restauranteId));
 
         plato.setRestaurante(restaurante);

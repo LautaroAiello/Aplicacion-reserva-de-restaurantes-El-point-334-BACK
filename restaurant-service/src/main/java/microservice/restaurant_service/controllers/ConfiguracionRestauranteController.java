@@ -1,14 +1,17 @@
 package microservice.restaurant_service.controllers;
 
 
+import java.util.NoSuchElementException;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import microservice.restaurant_service.dto.ConfiguracionRestauranteDTO;
 import microservice.restaurant_service.entity.ConfiguracionRestaurante;
 import microservice.restaurant_service.services.ConfiguracionRestauranteService;
 
 @RestController // Obligatorio para APIs REST
-@RequestMapping("/v1/restaurantes/{restauranteId}/configuracion")
+@RequestMapping("/restaurantes/{restauranteId}/configuracion")
 public class ConfiguracionRestauranteController {
 
     private final ConfiguracionRestauranteService configuracionService;
@@ -20,12 +23,14 @@ public class ConfiguracionRestauranteController {
     // GET /v1/restaurantes/{restauranteId}/configuracion
     // Obtiene la configuración
     @GetMapping
-    public ResponseEntity<ConfiguracionRestaurante> obtenerConfiguracion(@PathVariable Long restauranteId) {
-        return configuracionService.buscarPorRestauranteId(restauranteId)
-                // Si encuentra la configuración, devuelve 200 OK
-                .map(ResponseEntity::ok) 
-                // Si no la encuentra, devuelve 404 Not Found
-                .orElse(ResponseEntity.notFound().build()); 
+    public ResponseEntity<ConfiguracionRestauranteDTO> obtenerConfiguracion(@PathVariable Long restauranteId) {
+        try {
+            ConfiguracionRestauranteDTO config = configuracionService.buscarPorRestauranteId(restauranteId);
+            return ResponseEntity.ok(config);
+        } catch (NoSuchElementException e) {
+            // Manejador más robusto de NotFound
+            return ResponseEntity.notFound().build(); 
+        }
     }
 
     // POST /v1/restaurantes/{restauranteId}/configuracion

@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "configuracion_restaurante")
 @Data
@@ -18,6 +20,7 @@ public class ConfiguracionRestaurante {
     // Relación OneToOne con RESTAURANTE (Es el lado poseedor de la FK)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurante_id", nullable = false, unique = true)
+    @JsonIgnore
     private Restaurante restaurante;
 
     @Column(name = "tiempo_anticipacion_minutos")

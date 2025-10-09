@@ -1,5 +1,7 @@
 package microservice.reserva_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -14,6 +16,7 @@ public class ReservaMesa {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reserva_id", nullable = false) // FK a la tabla 'reserva'
+    @JsonIgnore
     private Reserva reserva;
 
     @Column(name = "mesa_id", nullable = false)

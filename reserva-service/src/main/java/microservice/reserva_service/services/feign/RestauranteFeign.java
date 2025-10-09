@@ -4,6 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
 import microservice.reserva_service.services.dto.RestauranteDTO;
 
@@ -18,4 +19,7 @@ public interface RestauranteFeign {
 
     @GetMapping("/restaurantes/{restauranteId}")
     RestauranteDTO obtenerRestaurantePorId(@PathVariable("restauranteId") Long restauranteId);
+
+    @GetMapping("/restaurantes/{id}/configuracion")
+    ConfiguracionRestauranteDTO obtenerConfiguracionPorRestauranteId(@PathVariable("id") Long id);
 }

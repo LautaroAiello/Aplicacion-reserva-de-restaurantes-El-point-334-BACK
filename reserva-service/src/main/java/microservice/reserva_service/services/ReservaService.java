@@ -1,8 +1,11 @@
 package microservice.reserva_service.services;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -11,11 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import microservice.reserva_service.services.dto.UsuarioDTO;
 import microservice.reserva_service.services.feign.UsuarioFeign;
 import microservice.reserva_service.services.feign.RestauranteFeign;
+import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
 import microservice.reserva_service.services.dto.RestauranteDTO;
 
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.entity.ReservaMesa;
+import microservice.reserva_service.repositories.ReservaMesaRepository;
 import microservice.reserva_service.repositories.ReservaRepository;
 
 @Service
@@ -23,11 +28,13 @@ public class ReservaService {
     private ReservaRepository reservaRepository;
     private UsuarioFeign usuarioFeign;
     private RestauranteFeign restauranteFeign;
+    private ReservaMesaRepository reservaMesaRepository;
 
-    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign){
+    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign, ReservaMesaRepository reservaMesaRepository) {
         this.reservaRepository = reservaRepository;
         this.usuarioFeign = usuarioFeign;
         this.restauranteFeign = restauranteFeign;
+        this.reservaMesaRepository = reservaMesaRepository;
     }
 
     public List<Reserva> obtenerTodas(){
@@ -44,6 +51,7 @@ public class ReservaService {
         //Obtenemos usuarioId y restauranteId de la reserva
         Long userId = reserva.getUsuarioId();
         Long restauranteId = reserva.getRestauranteId();
+        
         
         // Validar que la fecha y hora no sean en el pasado
         if (reserva.getFechaHora().isBefore(LocalDateTime.now())) {
@@ -84,16 +92,15 @@ public class ReservaService {
         // --- 2. LÓGICA DE NEGOCIO Y DISPONIBILIDAD ---
         
         // 1. Lógica de Negocio (Ej: Verificar disponibilidad de mesas - Opcional por ahora)
-        boolean disponible = verificarDisponibilidad(reserva.getRestauranteId(), reserva.getFechaHora(), reserva.getCantidadPersonas());
-        if (!disponible) throw new RuntimeException("No hay mesas disponibles para la fecha y cantidad de personas solicitadas.");
-        
-        
-        
+        validarDisponibilidadPorSolapamiento(reserva.getMesasReservadas(), reserva.getFechaHora());
+
         // 3. ESTABLECER FECHA DE CREACIÓN Y ESTADO INICIAL
         reserva.setFechaCreacion(LocalDateTime.now());
         if (reserva.getEstado() == null) {
             reserva.setEstado("PENDIENTE"); 
         }
+
+        // 4. VALIDACIONES COMPLEJAS DE NEGOCIO (CAPACIDAD, HORARIO, ANTICIPACIÓN, ETC.) QUESOOOOOOOOOOO
 
         return reservaRepository.save(reserva);
     }
@@ -135,21 +142,133 @@ public class ReservaService {
         reservaRepository.delete(reservaAEliminar);
     }
 
-    
-    /**
-     * Lógica para verificar la disponibilidad. 
-     * NOTA: Este método debería interactuar con el microservicio de CATÁLOGO (Mesas).
-     */
-    private boolean verificarDisponibilidad(Long restauranteId, LocalDateTime fechaHora, Integer cantidadPersonas) {
-        // Por ahora, solo devuelve 'true' para permitir la inserción, 
-        // pero en un entorno real debe contener la lógica de consulta a la BD.
-        
-        // Lógica de ejemplo (a implementar):
-        // 1. Consultar el servicio de Catálogo por la capacidad total del restaurante.
-        // 2. Consultar la tabla RESERVA por todas las reservas confirmadas en ese rango de tiempo.
-        // 3. Comparar y retornar.
+    private void validarDisponibilidadPorSolapamiento(List<ReservaMesa> mesasReservadas, LocalDateTime fechaHora) {    
+        List<Long> mesasIds = mesasReservadas.stream()
+                .map(ReservaMesa::getMesaId)
+                .collect(Collectors.toList());
 
-        return true; 
+        LocalDateTime inicioNueva = fechaHora;
+        LocalDateTime finNueva = inicioNueva.plusMinutes(240);
+
+        // 🛡️ Búsqueda en el rango de solapamiento (Usando el Repositorio que configuramos)
+        List<ReservaMesa> reservasConflicto = reservaMesaRepository
+            .findConflictingReservas(
+                mesasIds, 
+                inicioNueva, // inicioNueva mapea a :inicioNueva en la consulta nativa
+                finNueva     // finNueva mapea a :finNueva en la consulta nativa
+            );
+        
+        if (!reservasConflicto.isEmpty()) {
+            String mesasEnConflicto = reservasConflicto.stream()
+                .map(ReservaMesa::getMesaId)
+                .distinct()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+            
+            throw new IllegalArgumentException("Conflicto de disponibilidad. Las mesas " + 
+                                               mesasEnConflicto + " ya están reservadas en este horario de 4 horas.");
+        }
     }
+    private void validarCapacidadYHorario(Reserva reserva, RestauranteDTO restaurante) {
+    
+    // 1. CAPACIDAD Y PERTENENCIA DE MESAS
+    
+    // Usamos esta variable para acumular la capacidad de todas las mesas solicitadas.
+        int capacidadTotalMesas = 0;
+    
+        if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
+            throw new IllegalArgumentException("La reserva debe incluir al menos una mesa.");
+        }
+
+        for (ReservaMesa rm : reserva.getMesasReservadas()) {
+            Long mesaId = rm.getMesaId();
+        
+            // **1.A: Llama al Feign Client para validar existencia y obtener capacidad**
+            MesaDTO mesa = restauranteFeign.obtenerMesaPorIdYRestaurante(reserva.getRestauranteId(), mesaId);
+            
+            if (mesa == null) {
+                throw new IllegalArgumentException("Mesa con ID " + mesaId + " no existe o no pertenece al Restaurante " + reserva.getRestauranteId() + ".");
+            }
+        
+            // 1.B: Acumular la capacidad
+            capacidadTotalMesas += mesa.getCapacidad(); 
+
+            // 💡 Importante: Establecer la relación bidireccional aquí
+            rm.setReserva(reserva);
+        }
+    
+        // **1.C: Comparar capacidad total vs. cantidad de personas**
+        if (capacidadTotalMesas < reserva.getCantidadPersonas()) {
+            throw new IllegalArgumentException(
+                "La capacidad total de las mesas seleccionadas (" + capacidadTotalMesas + 
+                " personas) es insuficiente para la cantidad solicitada (" + reserva.getCantidadPersonas() + ")."
+            );
+        }
+
+        // ----------------------------------------------------
+        // 2. VALIDACIÓN DE HORARIO Y ANTICIPACIÓN (1.C y 1.D)
+        // ----------------------------------------------------
+    
+        LocalTime horaReserva = reserva.getFechaHora().toLocalTime();
+        LocalTime horarioApertura = restaurante.getHorarioApertura();
+        LocalTime horarioCierre = restaurante.getHorarioCierre();
+        if (horaReserva.isBefore(horarioApertura) || horaReserva.isAfter(horarioCierre)) {
+            // Formateador para mostrar el horario de forma limpia (ej: 12:00)
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+            throw new IllegalArgumentException(
+                "El restaurante solo acepta reservas entre las " + horarioApertura.format(timeFormatter) + 
+                " y las " + horarioCierre.format(timeFormatter) + "."
+            );
+        }
+          
+        // ----------------------------------------------------
+        // 3. VALIDACIÓN DE ANTICIPACIÓN Y MÍNIMOS (1.D)
+        // ----------------------------------------------------
+    
+        // Obtener configuración a través de Feign
+        ConfiguracionRestauranteDTO configDTO = restauranteFeign.obtenerConfiguracionPorRestauranteId(reserva.getRestauranteId());
+    
+        // ⚠️ Definición de valores por defecto en caso de que Feign falle (null check)
+        // final int MINUTOS_ANTICIPACION_REQUERIDOS = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 
+        //                                             ? configDTO.getTiempoAnticipacionMinutos() 
+        //                                             : 30; 
+    
+        // final int MIN_PERSONAS_EVENTO_LARGO = (configDTO != null && configDTO.getMinPersonasEventoLargo() != null) 
+        //                                       ? configDTO.getMinPersonasEventoLargo() 
+        //                                       : 10;
+    
+        // 3.A: Validar Tiempo Mínimo de Anticipación
+        LocalDateTime ahora = LocalDateTime.now();
+        Integer tiempoAnticipacionMinutos = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 
+                                                    ? configDTO.getTiempoAnticipacionMinutos() 
+                                                    : 30;
+        Integer minimoPersonasEventoLargo = (configDTO != null && configDTO.getMinPersonasEventoLargo() != null) 
+                                                    ? configDTO.getMinPersonasEventoLargo() 
+                                                    : 10;
+
+        LocalDateTime tiempoMinimoReserva = ahora.plusMinutes(tiempoAnticipacionMinutos);
+
+        if (reserva.getFechaHora().isBefore(tiempoMinimoReserva)) {
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            throw new IllegalArgumentException(
+                "La reserva debe realizarse con al menos " + tiempoAnticipacionMinutos + 
+                " minutos de anticipación. Hora mínima permitida: " + tiempoMinimoReserva.format(dateTimeFormatter)
+            );
+        }
+    
+        // 3.B: Validar Mínimo de Personas para Eventos Largos
+        if (reserva.getTipo() != null && reserva.getTipo().equals("EVENTO_LARGO")) {
+        
+            if (reserva.getCantidadPersonas() < minimoPersonasEventoLargo) {
+                 throw new IllegalArgumentException(
+                    "Para un 'Evento Largo', la cantidad de personas (" + reserva.getCantidadPersonas() + 
+                    ") debe ser igual o superior al mínimo requerido (" + minimoPersonasEventoLargo + ")."
+                );
+            }
+        }
+
+    } 
 
 }

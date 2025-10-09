@@ -2,6 +2,8 @@ package microservice.restaurant_service.services;
 
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
+import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.repositories.RestauranteRepository;
 
@@ -24,13 +26,51 @@ public class RestauranteService {
     }
 
     // 2. Obtener un restaurante por ID
-    public Optional<Restaurante> buscarPorId(Long id) {
+    @Transactional
+    public Optional<Restaurante> obtenerRestaurantePorId(Long id) {
         return restauranteRepository.findById(id);
     }
 
+    public Optional<RestauranteDTO> obtenerRestauranteDTOPorId(Long id) {
+    return restauranteRepository.findById(id)
+        .map(restaurante -> {
+            // 🔑 Mapeo ocurre en el Service (o en una clase Mapper inyectada)
+            RestauranteDTO dto = new RestauranteDTO();
+                    dto.setId(restaurante.getId());
+                    dto.setNombre(restaurante.getNombre());
+                    dto.setActivo(restaurante.getActivo());
+                    dto.setTelefono(restaurante.getTelefono());
+                    dto.setHorarioApertura(restaurante.getHorarioApertura());
+                    dto.setHorarioCierre(restaurante.getHorarioCierre());
+                    dto.setEntidad_fiscal_id(restaurante.getEntidad_fiscal_id());
+                    return dto;
+            });
+}
+
+
     // 3. Crear un nuevo restaurante
-    public Restaurante guardarRestaurante(Restaurante restaurante) {
-        // Lógica de negocio antes de guardar: ej. validaciones de horario, etc.
+    @Transactional
+    public Restaurante crearRestaurante(Restaurante restaurante) {
+        
+        // --- 1. VALIDACIÓN BÁSICA Y NEGOCIO ---
+        
+        if (restaurante.getNombre() == null || restaurante.getDireccion() == null) {
+             throw new IllegalArgumentException("El nombre y la dirección del restaurante son obligatorios.");
+        }
+        
+        // Verificar unicidad del nombre
+        Optional<Restaurante> existente = restauranteRepository.findByNombre(restaurante.getNombre());
+        if (existente.isPresent()) {
+            throw new RuntimeException("Ya existe un restaurante con el nombre: " + restaurante.getNombre());
+        }
+        
+        // --- 2. CONFIGURACIÓN DE CAMPOS Y RELACIONES ---
+        
+        if (restaurante.getActivo() == null) {
+            restaurante.setActivo(true);
+        }
+
+        // --- 3. PERSISTENCIA ---
         return restauranteRepository.save(restaurante);
     }
 

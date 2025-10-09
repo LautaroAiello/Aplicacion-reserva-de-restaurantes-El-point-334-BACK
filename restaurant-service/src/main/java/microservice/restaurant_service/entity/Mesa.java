@@ -1,5 +1,7 @@
 package microservice.restaurant_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +19,7 @@ public class Mesa {
     // Relación ManyToOne con RESTAURANTE (Clave Foránea)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurante_id", nullable = false)
+    @JsonIgnore
     private Restaurante restaurante;
 
     @Column(name = "descripcion", length = 255)
