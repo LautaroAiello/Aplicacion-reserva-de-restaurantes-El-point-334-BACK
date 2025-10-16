@@ -44,6 +44,6 @@ public class Plato {
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
-    // 3. Relación ManyToMany con ETIQUETA a través de PLATO_ETIQUETA (Opcional por ahora)
-    // Para simplificar, nos enfocaremos en las relaciones de un solo lado
 }
+// 3. Relación ManyToMany con ETIQUETA a través de PLATO_ETIQUETA (Opcional por ahora)
+// Para simplificar, nos enfocaremos en las relaciones de un solo lado

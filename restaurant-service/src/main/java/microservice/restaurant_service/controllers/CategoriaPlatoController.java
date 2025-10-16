@@ -11,7 +11,7 @@ import microservice.restaurant_service.services.CategoriaPlatoService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/categorias") // Ruta base independiente
+@RequestMapping("/restaurantes/categoriasPlato") // Ruta base independiente
 public class CategoriaPlatoController {
 
     private final CategoriaPlatoService categoriaPlatoService;
@@ -34,7 +34,6 @@ public class CategoriaPlatoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /v1/categorias
     @PostMapping
     public ResponseEntity<?> crearCategoria(@RequestBody CategoriaPlato categoria) {
         try {

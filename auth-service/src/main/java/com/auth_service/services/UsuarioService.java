@@ -7,8 +7,11 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.auth_service.dto.UsuarioAdminCreationDTO;
 import com.auth_service.entity.Usuario;
+import com.auth_service.entity.UsuarioRestaurante;
 import com.auth_service.repositories.UsuarioRepository;
+import com.auth_service.repositories.UsuarioRestauranteRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -16,10 +19,12 @@ import jakarta.transaction.Transactional;
 public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UsuarioRestauranteRepository usuarioRestauranteRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, UsuarioRestauranteRepository usuarioRestauranteRepository) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.usuarioRestauranteRepository = usuarioRestauranteRepository;
     }
 
     // public Usuario saveUsuario(Usuario usuario){
@@ -59,6 +64,56 @@ public class UsuarioService {
 
         // --- 4. PERSISTENCIA ---
         return usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public Usuario crearUsuarioYAsignarRol(UsuarioAdminCreationDTO usuarioAdmin) {
+        // 1. Validaciones del Usuario (Ej. Email único, que ya debes tener)
+        if (usuarioRepository.findByEmail(usuarioAdmin.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("El email " + usuarioAdmin.getEmail() + " ya está registrado.");
+        }
+    
+        // 2. Crear y Guardar el Usuario para obtener su ID
+        Usuario nuevoUsuario = new Usuario();
+        // ... mapear los campos del request a nuevoUsuario (nombre, email, password, etc.)
+        nuevoUsuario.setNombre(usuarioAdmin.getNombre());
+        nuevoUsuario.setApellido(usuarioAdmin.getApellido());
+        nuevoUsuario.setEmail(usuarioAdmin.getEmail());
+        nuevoUsuario.setTelefono(usuarioAdmin.getTelefono());
+
+        String passwordPlana = usuarioAdmin.getPassword();
+        String hashedPassword = passwordEncoder.encode(passwordPlana); 
+        nuevoUsuario.setPasswordHash(hashedPassword);
+
+    
+        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
+        Long usuarioIdGenerado = usuarioGuardado.getId(); // 💡 ¡Aquí tenemos el ID!
+
+        // ----------------------------------------------------------------------
+        // 3. Aplicar Restricción del Rol GESTOR (1:1) (POST-CREACIÓN)
+        // ----------------------------------------------------------------------
+        String rol = usuarioAdmin.getRol().toUpperCase();
+    
+        if ("GESTOR".equals(rol)) {
+            // Usamos el ID generado para validar si ya tiene otra asignación de GESTOR
+            if (!usuarioRestauranteRepository.findByUsuarioIdAndRol(usuarioIdGenerado, rol).isEmpty()) {
+            
+                // ⚠️ Compensación: Si la validación falla AHORA, la entidad Usuario ya está en la BD.
+                // Para mantener la atomicidad de la SAGA, deberíamos revertir el Paso 2:
+                usuarioRepository.delete(usuarioGuardado); // Eliminar el usuario recién creado
+                throw new IllegalArgumentException("Un usuario con rol GESTOR solo puede estar asignado a un restaurante.");
+            }
+        }
+    
+        // 4. Asignar el Rol en UsuarioRestaurante
+        UsuarioRestaurante asignacion = new UsuarioRestaurante();
+        asignacion.setUsuarioId(usuarioIdGenerado); // Usamos el ID generado
+        asignacion.setRestauranteId(usuarioAdmin.getRestauranteId());
+        asignacion.setRol(rol); 
+
+        usuarioRestauranteRepository.save(asignacion);
+    
+        return usuarioGuardado;
     }
 
     public List<Usuario> getAllUsuarios(){

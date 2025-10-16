@@ -169,6 +169,8 @@ public class ReservaService {
                                                mesasEnConflicto + " ya están reservadas en este horario de 4 horas.");
         }
     }
+
+    
     private void validarCapacidadYHorario(Reserva reserva, RestauranteDTO restaurante) {
     
     // 1. CAPACIDAD Y PERTENENCIA DE MESAS

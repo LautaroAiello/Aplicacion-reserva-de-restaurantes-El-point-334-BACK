@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import microservice.restaurant_service.dto.RestauranteDTO;
+import microservice.restaurant_service.dto.UsuarioCreationDTO;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.services.RestauranteService;
 
@@ -45,8 +46,26 @@ public class RestauranteController {
     // POST /restaurantes
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Restaurante crearRestaurante(@RequestBody Restaurante restaurante) {
+    public Restaurante crearRestaurante(@RequestBody RestauranteDTO restaurante) {
         return restauranteService.crearRestaurante(restaurante);
+    }
+
+    @PostMapping("/{restauranteId}/gestores") 
+    public ResponseEntity<?> crearYAsignarGestor(@PathVariable Long restauranteId, @RequestBody UsuarioCreationDTO gestorDTO) {
+        try {
+            // Llama al servicio orquestador
+            restauranteService.crearYAsignarGestor(restauranteId, gestorDTO); 
+            
+            // 201 Created indica que la asignación remota fue exitosa
+            return new ResponseEntity<>("Gestor creado y asignado exitosamente al restaurante " + restauranteId, HttpStatus.CREATED);
+            
+        } catch (IllegalArgumentException e) {
+            // Falla de validación (Restaurante no existe, o error devuelto por Feign)
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            // Fallo de conexión o error grave en la SAGA.
+            return new ResponseEntity<>("Fallo en la creación del Gestor (SAGA): " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // PUT /restaurantes/{id}
