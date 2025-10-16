@@ -16,12 +16,15 @@ import microservice.reserva_service.services.feign.UsuarioFeign;
 import microservice.reserva_service.services.feign.RestauranteFeign;
 import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
+import microservice.reserva_service.services.dto.ReservaHechaEvent;
 import microservice.reserva_service.services.dto.RestauranteDTO;
-
+import microservice.reserva_service.config.RabbitMQReservaConfig;
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.entity.ReservaMesa;
 import microservice.reserva_service.repositories.ReservaMesaRepository;
 import microservice.reserva_service.repositories.ReservaRepository;
+
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @Service
 public class ReservaService {
@@ -30,11 +33,16 @@ public class ReservaService {
     private RestauranteFeign restauranteFeign;
     private ReservaMesaRepository reservaMesaRepository;
 
-    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign, ReservaMesaRepository reservaMesaRepository) {
+    private final RabbitTemplate rabbitTemplate;
+    private final RabbitMQReservaConfig rabbitConfig;
+
+    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign, ReservaMesaRepository reservaMesaRepository, RabbitTemplate rabbitTemplate, RabbitMQReservaConfig rabbitConfig) {
         this.reservaRepository = reservaRepository;
         this.usuarioFeign = usuarioFeign;
         this.restauranteFeign = restauranteFeign;
         this.reservaMesaRepository = reservaMesaRepository;
+        this.rabbitTemplate = rabbitTemplate;
+        this.rabbitConfig = rabbitConfig;
     }
 
     public List<Reserva> obtenerTodas(){
@@ -102,7 +110,25 @@ public class ReservaService {
 
         // 4. VALIDACIONES COMPLEJAS DE NEGOCIO (CAPACIDAD, HORARIO, ANTICIPACIÓN, ETC.) QUESOOOOOOOOOOO
 
-        return reservaRepository.save(reserva);
+        Reserva reservaGuardada = reservaRepository.save(reserva);
+
+        ReservaHechaEvent event = new ReservaHechaEvent(
+            reservaGuardada.getId(),
+            restaurante.getNombre(),
+            reservaGuardada.getFechaHora(),
+            reservaGuardada.getCantidadPersonas(),
+            usuario.getEmail(),
+            usuario.getTelefono()
+        );
+
+        rabbitTemplate.convertAndSend(
+            RabbitMQReservaConfig.EXCHANGE_NAME, 
+            RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
+            event
+        );
+        System.out.println("✅ Evento ReservaHecha publicado para la Reserva ID: " + reservaGuardada.getId());
+
+        return reservaGuardada;
     }
 
 

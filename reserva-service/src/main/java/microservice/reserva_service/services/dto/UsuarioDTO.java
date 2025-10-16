@@ -4,7 +4,14 @@ public class UsuarioDTO {
     private Long id;
     private String nombre;
     private String email;
+    private String telefono;
 
+    public String getTelefono() {
+        return telefono;
+    }
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
     public Long getId() {
         return id;
     }

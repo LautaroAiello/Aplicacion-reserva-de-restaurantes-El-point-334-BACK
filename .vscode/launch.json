@@ -70,6 +70,16 @@
             "projectName": "auth-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-NotificacionServiceApplication<notificacion-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.notificacion_service.NotificacionServiceApplication",
+            "projectName": "notificacion-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
