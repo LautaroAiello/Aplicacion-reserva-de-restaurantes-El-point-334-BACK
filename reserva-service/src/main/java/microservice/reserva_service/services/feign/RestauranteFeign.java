@@ -20,6 +20,9 @@ public interface RestauranteFeign {
     @GetMapping("/restaurantes/{restauranteId}")
     RestauranteDTO obtenerRestaurantePorId(@PathVariable("restauranteId") Long restauranteId);
 
+    @GetMapping("/restaurantes/{restauranteId}/mesas")
+    java.util.List<MesaDTO> listarMesasPorRestaurante(@PathVariable("restauranteId") Long restauranteId);
+
     @GetMapping("/restaurantes/{id}/configuracion")
     ConfiguracionRestauranteDTO obtenerConfiguracionPorRestauranteId(@PathVariable("id") Long id);
 }

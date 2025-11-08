@@ -15,14 +15,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
+
+import com.auth_service.security.JwtUtil;
+import io.jsonwebtoken.Claims;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
     private final UsuarioService usuarioService;
+    private final JwtUtil jwtUtil;
 
-    public UsuarioController(UsuarioService usuarioService){
+    public UsuarioController(UsuarioService usuarioService, JwtUtil jwtUtil){
         this.usuarioService = usuarioService;
+        this.jwtUtil = jwtUtil;
     }
 
 
@@ -55,6 +61,35 @@ public class UsuarioController {
     public Usuario getUsuarioById(@PathVariable Long id) {
         return usuarioService.getUsuarioById(id).orElse(null);
     }   
+
+    /**
+     * GET /usuarios/me
+     * Accepts Authorization: Bearer <token> and returns the current Usuario
+     */
+    @GetMapping("/me")
+    public Usuario me(@RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Authorization header missing or invalid");
+        }
+
+        String token = authorization.substring("Bearer ".length());
+        Claims claims = jwtUtil.parseClaims(token);
+        Object usuarioIdObj = claims.get("usuarioId");
+        if (usuarioIdObj == null) {
+            throw new IllegalArgumentException("Token missing usuarioId claim");
+        }
+
+        Long usuarioId = null;
+        if (usuarioIdObj instanceof Integer) {
+            usuarioId = ((Integer) usuarioIdObj).longValue();
+        } else if (usuarioIdObj instanceof Long) {
+            usuarioId = (Long) usuarioIdObj;
+        } else if (usuarioIdObj instanceof String) {
+            usuarioId = Long.valueOf((String) usuarioIdObj);
+        }
+
+        return usuarioService.getUsuarioById(usuarioId).orElse(null);
+    }
     
 
 }

@@ -9,14 +9,19 @@ import org.springframework.web.bind.annotation.*;
 
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.services.ReservaService;
+import microservice.reserva_service.services.feign.UsuarioFeign;
+import microservice.reserva_service.services.dto.UsuarioDTO;
 
 @RestController
 @RequestMapping("/reservas")
 public class ReservaController {
 
     private final ReservaService reservaService;
-    public ReservaController(ReservaService reservaService) {
+    private final UsuarioFeign usuarioFeign;
+
+    public ReservaController(ReservaService reservaService, UsuarioFeign usuarioFeign) {
         this.reservaService = reservaService;
+        this.usuarioFeign = usuarioFeign;
     }
    
     @PostMapping
@@ -30,6 +35,61 @@ public class ReservaController {
     public ResponseEntity<List<Reserva>> obtenerTodas() {
         List<Reserva> reservas = reservaService.obtenerTodas();
         return new ResponseEntity<>(reservas, HttpStatus.OK);
+    }
+
+    // GET /reservas/disponibilidad?restauranteId=1&fechaHora=2025-11-10T20:00:00&cantidadPersonas=4&mesasIds=1,2
+    @GetMapping("/disponibilidad")
+    public ResponseEntity<?> consultarDisponibilidad(@RequestParam Long restauranteId,
+                                                     @RequestParam String fechaHora,
+                                                     @RequestParam Integer cantidadPersonas,
+                                                     @RequestParam(required = false) String mesasIds) {
+        try {
+            java.time.LocalDateTime fecha = java.time.LocalDateTime.parse(fechaHora);
+            java.util.List<Long> listaMesas = null;
+            if (mesasIds != null && !mesasIds.isBlank()) {
+                listaMesas = java.util.Arrays.stream(mesasIds.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(Long::valueOf)
+                        .toList();
+            }
+
+            boolean disponible = reservaService.consultarDisponibilidad(restauranteId, fecha, cantidadPersonas, listaMesas);
+            return ResponseEntity.ok(java.util.Map.of("available", disponible));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // GET /reservas/usuario/{usuarioId}
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<List<Reserva>> obtenerReservasPorUsuario(@PathVariable Long usuarioId) {
+        try {
+            java.util.List<Reserva> reservas = reservaService.obtenerReservasPorUsuario(usuarioId);
+            return ResponseEntity.ok(reservas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // GET /reservas/mias -> obtiene usuario desde token y devuelve sus reservas
+    @GetMapping("/mias")
+    public ResponseEntity<List<Reserva>> obtenerMisReservas(@RequestHeader(name = "Authorization", required = false) String authorization) {
+        try {
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorToken(authorization);
+            if (usuario == null || usuario.getId() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            java.util.List<Reserva> reservas = reservaService.obtenerReservasPorUsuario(usuario.getId());
+            return ResponseEntity.ok(reservas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/{id}")

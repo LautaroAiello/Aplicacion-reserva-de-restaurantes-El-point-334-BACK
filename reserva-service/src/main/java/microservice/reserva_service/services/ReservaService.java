@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -43,8 +44,52 @@ public class ReservaService {
         this.rabbitTemplate = rabbitTemplate;
     }
 
+    /**
+     * Endpoint helper: consulta disponibilidad para un restaurante en una fecha/hora.
+     * Si se envían mesas específicas (mesaIds) verifica solapamientos con la consulta nativa.
+     * Si no se envían mesas, por ahora devuelve true (placeholder) — se puede mejorar consultando
+     * restaurant-service para obtener todas las mesas y calcular capacidad.
+     */
+    public boolean consultarDisponibilidad(Long restauranteId, LocalDateTime fechaHora, Integer cantidadPersonas, java.util.List<Long> mesasIds) {
+        LocalDateTime inicioNueva = fechaHora;
+        LocalDateTime finNueva = inicioNueva.plusMinutes(240);
+
+        // Si el cliente envía mesas específicas, comprobamos conflictos únicamente sobre esas mesas
+        if (mesasIds != null && !mesasIds.isEmpty()) {
+            java.util.List<ReservaMesa> conflictos = reservaMesaRepository.findConflictingReservas(mesasIds, inicioNueva, finNueva);
+            return conflictos.isEmpty();
+        }
+
+        // Si no se envían mesas específicas: obtener todas las mesas del restaurante
+        List<MesaDTO> mesas = restauranteFeign.listarMesasPorRestaurante(restauranteId);
+
+        if (mesas == null || mesas.isEmpty()) {
+            // Sin mesas registradas, no hay disponibilidad
+            return false;
+        }
+
+        // Recolectar todos los IDs de mesas y consultar conflictos en bloque
+        java.util.List<Long> allMesaIds = mesas.stream().map(MesaDTO::getId).collect(Collectors.toList());
+        java.util.List<ReservaMesa> conflictos = reservaMesaRepository.findConflictingReservas(allMesaIds, inicioNueva, finNueva);
+
+        Set<Long> mesasOcupadas = conflictos.stream().map(ReservaMesa::getMesaId).collect(Collectors.toSet());
+
+        // Sumar la capacidad de las mesas libres
+        int capacidadLibre = mesas.stream()
+                .filter(m -> !mesasOcupadas.contains(m.getId()))
+                .mapToInt(MesaDTO::getCapacidad)
+                .sum();
+
+        int personasSolicitadas = (cantidadPersonas != null) ? cantidadPersonas : 0;
+        return capacidadLibre >= personasSolicitadas;
+    }
+
     public List<Reserva> obtenerTodas(){
         return reservaRepository.findAll();
+    }
+
+    public java.util.List<Reserva> obtenerReservasPorUsuario(Long usuarioId) {
+        return reservaRepository.findByUsuarioId(usuarioId);
     }
 
     public Reserva obtenerPorId(Long id) {
