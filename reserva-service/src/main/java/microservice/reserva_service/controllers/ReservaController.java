@@ -21,13 +21,9 @@ public class ReservaController {
    
     @PostMapping
     public ResponseEntity<Reserva> crearReserva(@RequestBody Reserva reserva) {
-        try {
-            Reserva nuevaReserva = reservaService.crearReserva(reserva);
-            return new ResponseEntity<>(nuevaReserva, HttpStatus.CREATED);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        System.out.println(">>> PETICIÓN RECIBIDA CON ÉXITO EN EL CONTROLADOR. <<<");
+        Reserva nuevaReserva = reservaService.crearReserva(reserva);
+        return new ResponseEntity<>(nuevaReserva, HttpStatus.CREATED);
     }
     
     @GetMapping

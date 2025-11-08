@@ -34,15 +34,13 @@ public class ReservaService {
     private ReservaMesaRepository reservaMesaRepository;
 
     private final RabbitTemplate rabbitTemplate;
-    private final RabbitMQReservaConfig rabbitConfig;
 
-    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign, ReservaMesaRepository reservaMesaRepository, RabbitTemplate rabbitTemplate, RabbitMQReservaConfig rabbitConfig) {
+    public ReservaService(ReservaRepository reservaRepository, RestauranteFeign restauranteFeign, UsuarioFeign usuarioFeign, ReservaMesaRepository reservaMesaRepository, RabbitTemplate rabbitTemplate) {
         this.reservaRepository = reservaRepository;
         this.usuarioFeign = usuarioFeign;
         this.restauranteFeign = restauranteFeign;
         this.reservaMesaRepository = reservaMesaRepository;
         this.rabbitTemplate = rabbitTemplate;
-        this.rabbitConfig = rabbitConfig;
     }
 
     public List<Reserva> obtenerTodas(){
@@ -73,13 +71,12 @@ public class ReservaService {
         if (usuario == null) {
              throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
         }
-        
+
         // Validar que el restaurante exista en el Restaurant Service
         RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(restauranteId);
         if (restaurante == null) {
             throw new RuntimeException("Restaurante con ID " + restauranteId + " no encontrado.");
         }
-
         // Validar que la reserva incluya al menos una mesa
         if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
              throw new RuntimeException("La reserva debe incluir al menos una mesa.");
@@ -98,6 +95,7 @@ public class ReservaService {
         }
 
         // --- 2. LÓGICA DE NEGOCIO Y DISPONIBILIDAD ---
+        validarCapacidadYHorario(reserva, restaurante);
         
         // 1. Lógica de Negocio (Ej: Verificar disponibilidad de mesas - Opcional por ahora)
         validarDisponibilidadPorSolapamiento(reserva.getMesasReservadas(), reserva.getFechaHora());
@@ -257,7 +255,7 @@ public class ReservaService {
         // Obtener configuración a través de Feign
         ConfiguracionRestauranteDTO configDTO = restauranteFeign.obtenerConfiguracionPorRestauranteId(reserva.getRestauranteId());
     
-        // ⚠️ Definición de valores por defecto en caso de que Feign falle (null check)
+        // Definición de valores por defecto en caso de que Feign falle (null check)
         // final int MINUTOS_ANTICIPACION_REQUERIDOS = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 
         //                                             ? configDTO.getTiempoAnticipacionMinutos() 
         //                                             : 30; 

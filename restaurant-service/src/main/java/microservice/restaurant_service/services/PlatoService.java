@@ -31,7 +31,7 @@ public class PlatoService {
         return platoRepository.findById(id);
     }
 
-    // Crear un nuevo plato
+    // Crear un nuevo platobvgvvvv
     public Plato guardarPlato(Long restauranteId, Plato plato) {
         // Lógica de negocio: 1. Verificar si el restaurante existe
         Restaurante restaurante = restauranteService.obtenerRestaurantePorId(restauranteId)
