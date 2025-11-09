@@ -67,16 +67,16 @@ public class UsuarioController {
      * Accepts Authorization: Bearer <token> and returns the current Usuario
      */
     @GetMapping("/me")
-    public Usuario me(@RequestHeader(name = "Authorization", required = false) String authorization) {
+    public ResponseEntity<?> me(@RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Authorization header missing or invalid");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authorization header missing or invalid");
         }
 
         String token = authorization.substring("Bearer ".length());
         Claims claims = jwtUtil.parseClaims(token);
         Object usuarioIdObj = claims.get("usuarioId");
         if (usuarioIdObj == null) {
-            throw new IllegalArgumentException("Token missing usuarioId claim");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token missing usuarioId claim");
         }
 
         Long usuarioId = null;
@@ -88,7 +88,40 @@ public class UsuarioController {
             usuarioId = Long.valueOf((String) usuarioIdObj);
         }
 
-        return usuarioService.getUsuarioById(usuarioId).orElse(null);
+        java.util.Optional<Usuario> opt = usuarioService.getUsuarioById(usuarioId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        Usuario u = opt.get();
+
+        java.util.Map<String,Object> resp = new java.util.HashMap<>();
+        resp.put("id", u.getId());
+        resp.put("nombre", u.getNombre());
+        resp.put("apellido", u.getApellido());
+        resp.put("email", u.getEmail());
+        resp.put("telefono", u.getTelefono());
+        resp.put("activo", u.getActivo());
+        resp.put("fechaRegistro", u.getFechaRegistro());
+
+        // roles
+        java.util.List<String> roles = usuarioService.getGlobalRoles(usuarioId);
+        resp.put("roles", roles);
+
+        // restaurante roles
+        java.util.List<com.auth_service.entity.UsuarioRestaurante> rr = usuarioService.getRestauranteRoles(usuarioId);
+        java.util.List<java.util.Map<String,Object>> restaurantes = new java.util.ArrayList<>();
+        if (rr != null) {
+            for (com.auth_service.entity.UsuarioRestaurante r : rr) {
+                java.util.Map<String,Object> m = new java.util.HashMap<>();
+                m.put("restauranteId", r.getRestauranteId());
+                m.put("rol", r.getRol());
+                restaurantes.add(m);
+            }
+        }
+        resp.put("restauranteRoles", restaurantes);
+
+        return ResponseEntity.ok(resp);
     }
     
 

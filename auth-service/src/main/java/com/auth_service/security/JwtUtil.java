@@ -43,6 +43,31 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * Genera token incluyendo roles y roles por restaurante (contextuales).
+     * restauranteRoles: lista de mapas con keys "restauranteId" (Number) y "rol" (String)
+     */
+    public String generateToken(String subject, Long usuarioId, java.util.List<String> roles, java.util.List<java.util.Map<String, Object>> restauranteRoles) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMs);
+
+        io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
+                .setSubject(subject)
+                .claim("usuarioId", usuarioId)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(key, SignatureAlgorithm.HS256);
+
+        if (roles != null) {
+            builder.claim("roles", roles);
+        }
+        if (restauranteRoles != null) {
+            builder.claim("restauranteRoles", restauranteRoles);
+        }
+
+        return builder.compact();
+    }
+
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }

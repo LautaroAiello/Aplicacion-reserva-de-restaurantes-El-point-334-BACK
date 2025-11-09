@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface UsuarioRestauranteRepository extends JpaRepository<UsuarioRestaurante, Long> {
     List<UsuarioRestaurante> findByUsuarioIdAndRol(Long usuarioId, String rol); 
+    List<UsuarioRestaurante> findByUsuarioId(Long usuarioId);
 }

@@ -1,6 +1,7 @@
 package com.auth_service.services;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -122,5 +123,26 @@ public class UsuarioService {
 
     public Optional<Usuario> getUsuarioById(Long id){
         return usuarioRepository.findById(id);
+    }
+
+    public Optional<Usuario> getUsuarioByEmail(String email) {
+        return usuarioRepository.findByEmail(email);
+    }
+
+    // Devuelve roles globales simples para incluir en tokens
+    public List<String> getGlobalRoles(Long usuarioId) {
+        List<String> roles = new ArrayList<>();
+        // Por defecto todos son USER
+        roles.add("USER");
+        // Si tiene alguna asignación con rol ADMIN en usuario_restaurante_rol, consideramos ADMIN global
+        if (!usuarioRestauranteRepository.findByUsuarioIdAndRol(usuarioId, "ADMIN").isEmpty()) {
+            roles.add("ADMIN");
+        }
+        return roles;
+    }
+
+    // Devuelve roles contextuales por restaurante (lista de UsuarioRestaurante)
+    public List<UsuarioRestaurante> getRestauranteRoles(Long usuarioId) {
+        return usuarioRestauranteRepository.findByUsuarioId(usuarioId);
     }
 }

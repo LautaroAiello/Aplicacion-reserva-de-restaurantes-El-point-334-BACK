@@ -6,6 +6,9 @@ public class UsuarioDTO {
     private String email;
     private String telefono;
 
+    private java.util.List<String> roles;
+    private java.util.List<RestauranteRoleDTO> restauranteRoles;
+
     public String getTelefono() {
         return telefono;
     }
@@ -29,5 +32,21 @@ public class UsuarioDTO {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public java.util.List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(java.util.List<String> roles) {
+        this.roles = roles;
+    }
+
+    public java.util.List<RestauranteRoleDTO> getRestauranteRoles() {
+        return restauranteRoles;
+    }
+
+    public void setRestauranteRoles(java.util.List<RestauranteRoleDTO> restauranteRoles) {
+        this.restauranteRoles = restauranteRoles;
     }
 }
