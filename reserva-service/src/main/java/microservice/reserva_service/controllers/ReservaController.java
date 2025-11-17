@@ -25,9 +25,10 @@ public class ReservaController {
     }
    
     @PostMapping
-    public ResponseEntity<Reserva> crearReserva(@RequestBody Reserva reserva) {
+    public ResponseEntity<Reserva> crearReserva(@RequestBody Reserva reserva,
+                                                @RequestHeader(name = "Authorization", required = false) String authorization) {
         System.out.println(">>> PETICIÓN RECIBIDA CON ÉXITO EN EL CONTROLADOR. <<<");
-        Reserva nuevaReserva = reservaService.crearReserva(reserva);
+        Reserva nuevaReserva = reservaService.crearReserva(reserva, authorization);
         return new ResponseEntity<>(nuevaReserva, HttpStatus.CREATED);
     }
     

@@ -98,7 +98,7 @@ public class ReservaService {
     }
 
     @Transactional
-    public Reserva crearReserva(Reserva reserva) {
+    public Reserva crearReserva(Reserva reserva, String authorization) {
         //Obtenemos usuarioId y restauranteId de la reserva
         Long userId = reserva.getUsuarioId();
         Long restauranteId = reserva.getRestauranteId();
@@ -112,7 +112,7 @@ public class ReservaService {
         // --- 1. VALIDACIÓN DE EXISTENCIA DE RECURSOS (ORQUESTACIÓN) ---
 
         // Validar que el usuario exista en el Auth Service
-        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
+        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId, authorization);
         if (usuario == null) {
              throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
         }

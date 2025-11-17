@@ -12,7 +12,7 @@ public interface UsuarioFeign {
     
 
     @GetMapping("/usuarios/{usuarioId}")
-        UsuarioDTO obtenerUsuarioPorId(@PathVariable("usuarioId") Long usuarioId);
+    UsuarioDTO obtenerUsuarioPorId(@PathVariable("usuarioId") Long usuarioId, @RequestHeader(value = "Authorization", required = false) String authorization);
 
     @GetMapping("/usuarios/me")
     UsuarioDTO obtenerUsuarioPorToken(@RequestHeader("Authorization") String authorization);
