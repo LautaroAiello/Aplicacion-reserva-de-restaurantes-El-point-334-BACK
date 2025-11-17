@@ -38,6 +38,11 @@ public class AuthController {
         }
 
         Usuario usuario = opt.get();
+        // Validar que la contraseña venga en el body
+        if (request.getPassword() == null || request.getPassword().isEmpty()) {
+            return new ResponseEntity<>("Credenciales inválidas", HttpStatus.UNAUTHORIZED);
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
             return new ResponseEntity<>("Credenciales inválidas", HttpStatus.UNAUTHORIZED);
         }

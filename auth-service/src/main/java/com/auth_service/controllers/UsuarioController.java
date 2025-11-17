@@ -33,8 +33,24 @@ public class UsuarioController {
 
 
     @PostMapping
-    public Usuario createUsuario(@RequestBody Usuario usuario) {
-        return usuarioService.guardarUsuario(usuario);
+    public ResponseEntity<?> createUsuario(@RequestBody com.auth_service.dto.RegisterRequest req) {
+        try {
+            Usuario usuario = new Usuario();
+            usuario.setNombre(req.getNombre());
+            usuario.setApellido(req.getApellido());
+            usuario.setEmail(req.getEmail());
+            // The service expects passwordHash field to contain the plain password; it will hash it.
+            usuario.setPasswordHash(req.getPassword());
+            usuario.setTelefono(req.getTelefono());
+
+            Usuario saved = usuarioService.guardarUsuario(usuario);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // Log the exception server-side in a real app; return generic message to client
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al crear usuario");
+        }
     }
 
     @PostMapping("/admin-asignacion") // 💡 EL ENDPOINT QUE NECESITAMOS

@@ -5,12 +5,15 @@ import com.auth_service.security.JwtUtil;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -21,19 +24,21 @@ public class SecurityConfig {
         http
             // 1. Deshabilitar CSRF (Crucial para APIs sin estado como REST)
             .csrf(csrf -> csrf.disable()) 
-            
+            .cors(Customizer.withDefaults())
             // 2. Configurar la autorización de peticiones
-            .authorizeHttpRequests(authorize -> authorize
-                // Permitir el acceso sin autenticación al endpoint de registro
-                .requestMatchers("/usuarios").permitAll() // ✅ Permitir POST para crear usuario
-                .requestMatchers("/usuarios/**").permitAll() // ✅ Permitir GET para usuarios (Feign Client lo necesita)
-                .requestMatchers("/login").permitAll() // permitir login
+            .sessionManagement(session -> 
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authorizeHttpRequests(authz -> authz
                 
-                // Otras rutas (ej: para login, si las tuvieras)
-                // .requestMatchers("/auth/**").permitAll() 
+                // Permite POST a las rutas locales de registro y login
+                .requestMatchers(HttpMethod.POST, "/usuarios", "/login").permitAll()
                 
-                // Restringir cualquier otra petición:
-                .anyRequest().authenticated()
+                // Permite el "pre-vuelo" OPTIONS de CORS
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
+                
+                // Protege el resto de rutas
+                .anyRequest().authenticated() 
             );
 
     // Agregar el filtro de autenticación JWT antes del UsernamePasswordAuthenticationFilter
