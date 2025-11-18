@@ -37,6 +37,9 @@ public class Restaurante {
     @JoinColumn(name = "direccion_id", referencedColumnName = "id")
     private Direccion direccion;
 
+    @Column(name = "imagen_url", length = 500) // Longitud 500 para URLs largas
+    private String imagenUrl;
+
     // 2. OneToOne con ENTIDAD_FISCAL (FK: entidad_fiscal_id)
     // Se usa la clase EntidadFiscal minimalista, aunque pertenezca conceptualmente a otro microservicio.
     @Column(name = "entidad_fiscal_id")

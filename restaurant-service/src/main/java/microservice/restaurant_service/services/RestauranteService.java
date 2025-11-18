@@ -14,6 +14,7 @@ import microservice.restaurant_service.repositories.RestauranteRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RestauranteService {
@@ -28,9 +29,45 @@ public class RestauranteService {
     }
 
     // 1. Obtener todos los restaurantes
-    public List<Restaurante> listarTodos() {
-        return restauranteRepository.findAll();
+    // public List<Restaurante> listarTodos() {
+    //     return restauranteRepository.findAll();
+    // }
+    public List<RestauranteDTO> listarRestaurantesDTO() {
+    List<Restaurante> restaurantes = restauranteRepository.findAll();
+
+    // Mapear la lista de Entidades a lista de DTOs
+    return restaurantes.stream()
+        .map(this::mapearADTO) // Usamos un método auxiliar para no repetir código
+        .collect(Collectors.toList());
     }
+
+    private RestauranteDTO mapearADTO(Restaurante restaurante) {
+    RestauranteDTO dto = new RestauranteDTO();
+    dto.setId(restaurante.getId());
+    dto.setNombre(restaurante.getNombre());
+    dto.setActivo(restaurante.getActivo());
+    dto.setTelefono(restaurante.getTelefono());
+    dto.setHorarioApertura(restaurante.getHorarioApertura());
+    dto.setHorarioCierre(restaurante.getHorarioCierre());
+    dto.setImagenUrl(restaurante.getImagenUrl());
+    
+    if (restaurante.getDireccion() != null) {
+        Direccion dirEntidad = restaurante.getDireccion();
+        DireccionDTO dirDto = new DireccionDTO();
+        
+        dirDto.setCalle(dirEntidad.getCalle());
+        dirDto.setNumero(dirEntidad.getNumero());
+        dirDto.setCiudad(dirEntidad.getCiudad());
+        dirDto.setProvincia(dirEntidad.getProvincia());
+        dirDto.setPais(dirEntidad.getPais());
+        dirDto.setLatitud(dirEntidad.getLatitud());
+        dirDto.setLongitud(dirEntidad.getLongitud());
+
+        dto.setDireccion(dirDto);
+    }
+    
+    return dto;
+}
 
     // 2. Obtener un restaurante por ID
     @Transactional
@@ -50,6 +87,22 @@ public class RestauranteService {
                     dto.setHorarioApertura(restaurante.getHorarioApertura());
                     dto.setHorarioCierre(restaurante.getHorarioCierre());
                     dto.setEntidad_fiscal_id(restaurante.getEntidad_fiscal_id());
+                    dto.setImagenUrl(restaurante.getImagenUrl());
+                    if (restaurante.getDireccion() != null) {
+                        Direccion dirEntidad = restaurante.getDireccion();
+                        DireccionDTO dirDto = new DireccionDTO();
+
+                        dirDto.setCalle(dirEntidad.getCalle());
+                     dirDto.setNumero(dirEntidad.getNumero());
+                        dirDto.setCiudad(dirEntidad.getCiudad());
+                        dirDto.setProvincia(dirEntidad.getProvincia());
+                        dirDto.setPais(dirEntidad.getPais());
+                        // Si usas lat/long en el DTO:
+                        dirDto.setLatitud(dirEntidad.getLatitud());
+                        dirDto.setLongitud(dirEntidad.getLongitud());
+
+                        dto.setDireccion(dirDto);
+                    }
                     return dto;
             });
 }

@@ -12,7 +12,14 @@ public class RestauranteDTO {
     private LocalTime horarioCierre;
     private Long entidad_fiscal_id;
     private DireccionDTO direccion;
+    private String imagenUrl;
 
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
+    }
     // --- Datos del Administrador/Dueño (Usuario) ---
     private String nombreUsuario;
     private String apellidoUsuario;

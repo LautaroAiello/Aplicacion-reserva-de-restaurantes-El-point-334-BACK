@@ -1,0 +1,1 @@
+ALTER TABLE restaurante ADD COLUMN imagen_url VARCHAR(500);
