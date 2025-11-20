@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "categoria_plato")
 @Data
@@ -21,5 +23,6 @@ public class CategoriaPlato {
 
     // Relación OneToMany con PLATO (Mapeada en Plato)
     @OneToMany(mappedBy = "categoriaPlato", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Plato> platos;
 }

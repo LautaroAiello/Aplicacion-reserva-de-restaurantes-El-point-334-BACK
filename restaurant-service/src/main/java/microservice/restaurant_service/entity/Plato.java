@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "plato")
@@ -26,6 +27,7 @@ public class Plato {
     // 2. Relación ManyToOne con CATEGORIA_PLATO
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_plato_id")
+    @JsonIgnoreProperties({"platos", "hibernateLazyInitializer", "handler"})
     private CategoriaPlato categoriaPlato;
 
     @Column(name = "nombre", nullable = false, length = 255)
