@@ -82,14 +82,25 @@ public class RestauranteController {
 
     // PUT /restaurantes/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Restaurante> actualizarRestaurante(@PathVariable Long id, @RequestBody Restaurante restauranteDetalles) {
+    // Cambiamos @RequestBody Restaurante a @RequestBody RestauranteDTO
+    public ResponseEntity<Restaurante> actualizarRestaurante(@PathVariable Long id, @RequestBody RestauranteDTO restauranteDTO) {
         try {
-            Restaurante actualizado = restauranteService.actualizarRestaurante(id, restauranteDetalles);
+            // Llamamos al servicio con el DTO
+            Restaurante actualizado = restauranteService.actualizarRestaurante(id, restauranteDTO);
             return ResponseEntity.ok(actualizado);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
+    // @PutMapping("/{id}")
+    // public ResponseEntity<Restaurante> actualizarRestaurante(@PathVariable Long id, @RequestBody Restaurante restauranteDetalles) {
+    //     try {
+    //         Restaurante actualizado = restauranteService.actualizarRestaurante(id, restauranteDetalles);
+    //         return ResponseEntity.ok(actualizado);
+    //     } catch (RuntimeException e) {
+    //         return ResponseEntity.notFound().build();
+    //     }
+    // }
 
     // DELETE /restaurantes/{id}
     @DeleteMapping("/{id}")

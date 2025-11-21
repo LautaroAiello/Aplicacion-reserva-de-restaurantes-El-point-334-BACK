@@ -14,11 +14,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/restaurantes/{restauranteId}/platos")
 public class PlatoController {
-    private PlatoRepository platoRepository;
+    private final PlatoRepository platoRepository;
     private final PlatoService platoService;
 
-    public PlatoController(PlatoService platoService) {
+   
+    public PlatoController(PlatoService platoService, PlatoRepository platoRepository) {
         this.platoService = platoService;
+        this.platoRepository = platoRepository;
     }
 
     // GET /v1/restaurantes/{restauranteId}/platos

@@ -5,10 +5,14 @@ import java.util.Set;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 @Entity
 @Table(name = "restaurante")
+@Getter // Usar Getter y Setter separados es más seguro para JPA que @Data
+@Setter
 @Data
 public class Restaurante {
 
@@ -33,7 +37,7 @@ public class Restaurante {
     private LocalTime horarioCierre;
 
     // 1. OneToOne con DIRECCION (FK: direccion_id)
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER) // EAGER para facilitar el acceso a la dirección
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "direccion_id", referencedColumnName = "id")
     private Direccion direccion;
 
@@ -46,7 +50,7 @@ public class Restaurante {
     private Long entidad_fiscal_id;
 
     // 3. OneToOne con CONFIGURACION_RESTAURANTE (Mapeada en ConfiguracionRestaurante, con FK a Restaurante)
-    @OneToOne(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private ConfiguracionRestaurante configuracion;
 
     // 4. OneToMany con MESA (Mapeada en Mesa, con FK a Restaurante)

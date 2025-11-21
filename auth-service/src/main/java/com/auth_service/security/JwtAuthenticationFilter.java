@@ -43,7 +43,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // (ej. /usuarios o /api/auth/usuarios)
         if (
             (path.endsWith("/usuarios") && method.equals("POST")) ||
-            (path.endsWith("/login") && method.equals("POST"))
+            (path.endsWith("/login") && method.equals("POST")) ||
+            (path.endsWith("/admin-asignacion") && method.equals("POST")) || // <-- AÑADE ESTO
+            (method.equals("OPTIONS"))
         ) {
             filterChain.doFilter(request, response);
             return;

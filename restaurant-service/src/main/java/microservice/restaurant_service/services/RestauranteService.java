@@ -3,10 +3,12 @@ package microservice.restaurant_service.services;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import microservice.restaurant_service.dto.ConfiguracionRestauranteDTO;
 import microservice.restaurant_service.dto.DireccionDTO;
 import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioAdminCreationDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
+import microservice.restaurant_service.entity.ConfiguracionRestaurante;
 import microservice.restaurant_service.entity.Direccion;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.feign.UsuarioFeign;
@@ -185,25 +187,90 @@ public class RestauranteService {
     }
 
     // 4. Actualizar un restaurante existente
-    public Restaurante actualizarRestaurante(Long id, Restaurante detalles) {
-        return restauranteRepository.findById(id)
-            .map(restaurante -> {
-                // Actualización de campos
-                restaurante.setNombre(detalles.getNombre());
-                restaurante.setActivo(detalles.getActivo());
-                restaurante.setTelefono(detalles.getTelefono());
-                restaurante.setHorarioApertura(detalles.getHorarioApertura());
-                restaurante.setHorarioCierre(detalles.getHorarioCierre());
+     @Transactional
+    public Restaurante actualizarRestaurante(Long id, RestauranteDTO detallesDTO) {
+        
+        Restaurante restaurante = restauranteRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Restaurante no encontrado con ID: " + id));
 
-                // Al ser el dueño de la FK, al guardar el Restaurante,
-                // JPA maneja automáticamente la actualización de Direccion.
-                if (detalles.getDireccion() != null) {
-                    restaurante.setDireccion(detalles.getDireccion());
-                }
+        // Actualización de campos simples
+        restaurante.setNombre(detallesDTO.getNombre());
+        restaurante.setActivo(detallesDTO.getActivo());
+        restaurante.setTelefono(detallesDTO.getTelefono());
+        restaurante.setHorarioApertura(detallesDTO.getHorarioApertura());
+        restaurante.setHorarioCierre(detallesDTO.getHorarioCierre());
+        
+        // Actualizar Imagen
+        if (detallesDTO.getImagenUrl() != null) {
+            restaurante.setImagenUrl(detallesDTO.getImagenUrl());
+        }
 
-                return restauranteRepository.save(restaurante);
-            }).orElseThrow(() -> new RuntimeException("Restaurante no encontrado con ID: " + id)); // Manejo de excepciones
+        // --- CORRECCIÓN DIRECCIÓN: Actualizar existente en vez de crear nueva ---
+        if (detallesDTO.getDireccion() != null) {
+            DireccionDTO dirDTO = detallesDTO.getDireccion();
+            
+            // Recuperamos la dirección que YA EXISTE en la base de datos
+            Direccion dir = restaurante.getDireccion();
+            
+            if (dir == null) {
+                // Solo si no existe, creamos una nueva
+                dir = new Direccion();
+                restaurante.setDireccion(dir);
+            }
+            
+            // Actualizamos los campos SOBRE la instancia existente.
+            // Hibernate detectará que el ID es el mismo y hará un UPDATE.
+            dir.setCalle(dirDTO.getCalle());
+            dir.setNumero(dirDTO.getNumero());
+            dir.setCiudad(dirDTO.getCiudad());
+            dir.setProvincia(dirDTO.getProvincia());
+            dir.setPais(dirDTO.getPais());
+            dir.setLatitud(dirDTO.getLatitud());
+            dir.setLongitud(dirDTO.getLongitud());
+        }
+
+        // --- CORRECCIÓN CONFIGURACIÓN: Actualizar existente ---
+        if (detallesDTO.getConfiguracion() != null) {
+            microservice.restaurant_service.dto.ConfiguracionRestauranteDTO configDTO = detallesDTO.getConfiguracion();
+            
+            // Recuperamos la configuración que YA EXISTE
+            microservice.restaurant_service.entity.ConfiguracionRestaurante config = restaurante.getConfiguracion();
+            
+            if (config == null) {
+                // Solo si no existe, creamos una nueva y vinculamos
+                config = new microservice.restaurant_service.entity.ConfiguracionRestaurante();
+                config.setRestaurante(restaurante); // Vincular padre
+                restaurante.setConfiguracion(config); // Vincular hijo
+            }
+
+            // Actualizamos los campos SOBRE la instancia existente
+            config.setTiempoAnticipacionMinutos(configDTO.getTiempoAnticipacionMinutos());
+            config.setMinPersonasEventoLargo(configDTO.getMinPersonasEventoLargo());
+            // Mapear otros campos de configuración si existen en tu DTO/Entidad
+        }
+
+        return restauranteRepository.save(restaurante);
     }
+    // @Transactional
+    // public Restaurante actualizarRestaurante(Long id, RestauranteDTO detallesDTO) {
+    //     return restauranteRepository.findById(id)
+    //         .map(restaurante -> {
+    //             // Actualización de campos
+    //             restaurante.setNombre(detalles.getNombre());
+    //             restaurante.setActivo(detalles.getActivo());
+    //             restaurante.setTelefono(detalles.getTelefono());
+    //             restaurante.setHorarioApertura(detalles.getHorarioApertura());
+    //             restaurante.setHorarioCierre(detalles.getHorarioCierre());
+
+    //             // Al ser el dueño de la FK, al guardar el Restaurante,
+    //             // JPA maneja automáticamente la actualización de Direccion.
+    //             if (detalles.getDireccion() != null) {
+    //                 restaurante.setDireccion(detalles.getDireccion());
+    //             }
+
+    //             return restauranteRepository.save(restaurante);
+    //         }).orElseThrow(() -> new RuntimeException("Restaurante no encontrado con ID: " + id)); // Manejo de excepciones
+    // }
 
     // 5. Eliminar un restaurante
     public void eliminarRestaurante(Long id) {

@@ -3,7 +3,7 @@ package microservice.restaurant_service.dto;
 public class ConfiguracionRestauranteDTO {
     private Integer tiempoAnticipacionMinutos;
     private Integer minPersonasEventoLargo;
-
+    
     public Integer getTiempoAnticipacionMinutos() {
         return tiempoAnticipacionMinutos;
     }

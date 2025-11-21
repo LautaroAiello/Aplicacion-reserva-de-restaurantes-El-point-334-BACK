@@ -1,5 +1,5 @@
 package microservice.restaurant_service.dto;
-
+import microservice.restaurant_service.dto.ConfiguracionRestauranteDTO;
 import java.time.LocalTime;
 
 public class RestauranteDTO {
@@ -13,6 +13,7 @@ public class RestauranteDTO {
     private Long entidad_fiscal_id;
     private DireccionDTO direccion;
     private String imagenUrl;
+    private ConfiguracionRestauranteDTO configuracion;
 
     public String getImagenUrl() {
         return imagenUrl;
@@ -20,6 +21,8 @@ public class RestauranteDTO {
     public void setImagenUrl(String imagenUrl) {
         this.imagenUrl = imagenUrl;
     }
+    public ConfiguracionRestauranteDTO getConfiguracion() { return configuracion; }
+    public void setConfiguracion(ConfiguracionRestauranteDTO configuracion) { this.configuracion = configuracion; }
     // --- Datos del Administrador/Dueño (Usuario) ---
     private String nombreUsuario;
     private String apellidoUsuario;

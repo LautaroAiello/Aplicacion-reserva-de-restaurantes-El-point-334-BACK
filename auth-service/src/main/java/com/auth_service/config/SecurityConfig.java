@@ -32,7 +32,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 
                 // Permite POST a las rutas locales de registro y login
-                .requestMatchers(HttpMethod.POST, "/usuarios", "/login").permitAll()
+                .requestMatchers(HttpMethod.POST, 
+                    "/usuarios", 
+                    "/login", 
+                    "/usuarios/admin-asignacion", // <-- AÑADE ESTA LÍNEA (Ruta local)
+                    "/api/auth/usuarios", 
+                    "/api/auth/login",
+                    "/api/auth/usuarios/admin-asignacion" // <-- Y ESTA (Ruta gateway, por si acaso)
+                ).permitAll()
                 
                 // Permite el "pre-vuelo" OPTIONS de CORS
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
