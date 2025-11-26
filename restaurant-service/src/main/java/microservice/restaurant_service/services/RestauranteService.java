@@ -3,15 +3,16 @@ package microservice.restaurant_service.services;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
-import microservice.restaurant_service.dto.ConfiguracionRestauranteDTO;
 import microservice.restaurant_service.dto.DireccionDTO;
+import microservice.restaurant_service.dto.EtiquetaDTO;
 import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioAdminCreationDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
-import microservice.restaurant_service.entity.ConfiguracionRestaurante;
+
 import microservice.restaurant_service.entity.Direccion;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.feign.UsuarioFeign;
+import microservice.restaurant_service.repositories.EtiquetaRepository;
 import microservice.restaurant_service.repositories.RestauranteRepository;
 
 import java.util.List;
@@ -23,11 +24,13 @@ public class RestauranteService {
 
     private final RestauranteRepository restauranteRepository;
     private final UsuarioFeign usuarioFeign;
+    private final EtiquetaRepository etiquetaRepository;
 
     //@Autowired
-    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign) {
+    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign, EtiquetaRepository etiquetaRepository) {
         this.restauranteRepository = restauranteRepository;
         this.usuarioFeign = usuarioFeign;
+        this.etiquetaRepository = etiquetaRepository;
     }
 
     // 1. Obtener todos los restaurantes
@@ -313,6 +316,26 @@ public class RestauranteService {
     
         // ⚠️ Nota: No hay compensación aquí porque no se guardó nada en el CATALOGO-SERVICE.
         // Si falla, simplemente se lanza la excepción.
+    }
+
+    //BÚSQUEDA
+    public List<RestauranteDTO> buscarRestaurantes(String nombre, String etiqueta) {
+        String nombreFiltro = (nombre == null) ? "" : nombre;
+        List<Restaurante> resultados = restauranteRepository.buscarPorNombreYEtiqueta(nombreFiltro, etiqueta);
+        return resultados.stream()
+                .map(this::mapearADTO)
+                .collect(Collectors.toList());
+    } 
+
+    // 2. OBTENER TODAS LAS ETIQUETAS (Para el Carrusel)
+    public List<EtiquetaDTO> obtenerTodasLasEtiquetas() {
+        return etiquetaRepository.findAll().stream().map(e -> {
+            EtiquetaDTO dto = new EtiquetaDTO();
+            dto.setId(e.getId());
+            dto.setNombre(e.getNombre());
+            dto.setImagenUrl(e.getImagenUrl());
+            return dto;
+        }).collect(Collectors.toList());
     }
     
 }

@@ -20,4 +20,7 @@ public class Etiqueta {
     // Opcional: Relación bidireccional con PLATO_ETIQUETA si la necesitas para consultas
     // @OneToMany(mappedBy = "etiqueta", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     // private Set<PlatoEtiqueta> platosAsociados;
+
+    @Column(name = "imagen_url")
+    private String imagenUrl;
 }
