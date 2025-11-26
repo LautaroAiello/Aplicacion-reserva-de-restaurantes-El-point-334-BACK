@@ -98,7 +98,7 @@ public class ReservaService {
     }
 
     @Transactional
-    public Reserva crearReserva(Reserva reserva, String authorization) {
+    public Reserva crearReserva(Reserva reserva) {
         //Obtenemos usuarioId y restauranteId de la reserva
         Long userId = reserva.getUsuarioId();
         Long restauranteId = reserva.getRestauranteId();
@@ -112,7 +112,7 @@ public class ReservaService {
         // --- 1. VALIDACIÓN DE EXISTENCIA DE RECURSOS (ORQUESTACIÓN) ---
 
         // Validar que el usuario exista en el Auth Service
-        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId, authorization);
+        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
         if (usuario == null) {
              throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
         }
@@ -169,7 +169,6 @@ public class ReservaService {
             RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
             event
         );
-        System.out.println("✅ Evento ReservaHecha publicado para la Reserva ID: " + reservaGuardada.getId());
 
         return reservaGuardada;
     }
@@ -296,19 +295,31 @@ public class ReservaService {
         // ----------------------------------------------------
         // 3. VALIDACIÓN DE ANTICIPACIÓN Y MÍNIMOS (1.D)
         // ----------------------------------------------------
+
+        ConfiguracionRestauranteDTO configDTO = null;
+
+        try {
+        // 💡 Intentamos obtener la configuración
+        configDTO = restauranteFeign.obtenerConfiguracionPorRestauranteId(reserva.getRestauranteId());
+        } catch (feign.FeignException.NotFound ex) {
+        // 💡 SI NO EXISTE (404), NO PASA NADA. Usaremos defaults.
+            System.out.println("⚠️ No se encontró configuración para el restaurante " + reserva.getRestauranteId() + ". Usando valores por defecto.");
+        // configDTO queda en null
+        } catch (Exception ex) {
+        // Otros errores (conexión) sí los reportamos
+            System.err.println("Error al consultar configuración: " + ex.getMessage());
+        }
+
+        final int MINUTOS_ANTICIPACION_REQUERIDOS = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 
+                                                ? configDTO.getTiempoAnticipacionMinutos() 
+                                                : 30; // Default: 30 min
+    
+        final int MIN_PERSONAS_EVENTO_LARGO = (configDTO != null && configDTO.getMinPersonasEventoLargo() != null) 
+                                          ? configDTO.getMinPersonasEventoLargo() 
+                                          : 10;
     
         // Obtener configuración a través de Feign
-        ConfiguracionRestauranteDTO configDTO = restauranteFeign.obtenerConfiguracionPorRestauranteId(reserva.getRestauranteId());
-    
-        // Definición de valores por defecto en caso de que Feign falle (null check)
-        // final int MINUTOS_ANTICIPACION_REQUERIDOS = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 
-        //                                             ? configDTO.getTiempoAnticipacionMinutos() 
-        //                                             : 30; 
-    
-        // final int MIN_PERSONAS_EVENTO_LARGO = (configDTO != null && configDTO.getMinPersonasEventoLargo() != null) 
-        //                                       ? configDTO.getMinPersonasEventoLargo() 
-        //                                       : 10;
-    
+        // ConfiguracionRestauranteDTO configDTO = restauranteFeign.obtenerConfiguracionPorRestauranteId(reserva.getRestauranteId());
         // 3.A: Validar Tiempo Mínimo de Anticipación
         LocalDateTime ahora = LocalDateTime.now();
         Integer tiempoAnticipacionMinutos = (configDTO != null && configDTO.getTiempoAnticipacionMinutos() != null) 

@@ -39,7 +39,10 @@ public class GlobalExceptionHandler {
         
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         String errorType = "Internal Server Error";
-        String message = "Fallo en la comunicación con un servicio externo (" + ex.status() + ").";
+        // String message = "Fallo en la comunicación con un servicio externo (" + ex.status() + ").";
+
+        String failedUrl = ex.request().url(); 
+        String message = "Fallo en servicio externo (" + ex.status() + ") al llamar a: " + failedUrl;
         
         // Determinar el estado basado en la respuesta de Feign
         if (ex.status() == HttpStatus.NOT_FOUND.value()) {
@@ -69,6 +72,8 @@ public class GlobalExceptionHandler {
             request.getDescription(false).replace("uri=", "")
         );
         
+        System.err.println("❌ ERROR FEIGN: " + message);
+
         return new ResponseEntity<>(errorResponse, status);
     }
     

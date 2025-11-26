@@ -1,13 +1,16 @@
 package microservice.reserva_service.services.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UsuarioDTO {
     private Long id;
     private String nombre;
     private String email;
     private String telefono;
 
-    private java.util.List<String> roles;
-    private java.util.List<RestauranteRoleDTO> restauranteRoles;
+    // private java.util.List<String> roles;
+    // private java.util.List<RestauranteRoleDTO> restauranteRoles;
 
     public String getTelefono() {
         return telefono;
@@ -34,19 +37,19 @@ public class UsuarioDTO {
         this.email = email;
     }
 
-    public java.util.List<String> getRoles() {
-        return roles;
-    }
+    // public java.util.List<String> getRoles() {
+    //     return roles;
+    // }
 
-    public void setRoles(java.util.List<String> roles) {
-        this.roles = roles;
-    }
+    // public void setRoles(java.util.List<String> roles) {
+    //     this.roles = roles;
+    // }
 
-    public java.util.List<RestauranteRoleDTO> getRestauranteRoles() {
-        return restauranteRoles;
-    }
+    // public java.util.List<RestauranteRoleDTO> getRestauranteRoles() {
+    //     return restauranteRoles;
+    // }
 
-    public void setRestauranteRoles(java.util.List<RestauranteRoleDTO> restauranteRoles) {
-        this.restauranteRoles = restauranteRoles;
-    }
+    // public void setRestauranteRoles(java.util.List<RestauranteRoleDTO> restauranteRoles) {
+    //     this.restauranteRoles = restauranteRoles;
+    // }
 }

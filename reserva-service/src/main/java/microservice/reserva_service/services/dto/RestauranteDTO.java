@@ -1,11 +1,13 @@
 package microservice.reserva_service.services.dto;
 
 import java.time.LocalTime;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RestauranteDTO {
     private Long id;
     private String nombre;
-    private String direccion;
+    // private String direccion;
     private LocalTime horarioApertura;
     private LocalTime horarioCierre;
     
@@ -27,16 +29,16 @@ public class RestauranteDTO {
     public String getNombre() {
         return nombre;
     }
-    public String getDireccion() {
-        return direccion;
-    }
+    // public String getDireccion() {
+    //     return direccion;
+    // }
     public void setId(Long id) {
         this.id = id;
     }
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
+    // public void setDireccion(String direccion) {
+    //     this.direccion = direccion;
+    // }
 }
