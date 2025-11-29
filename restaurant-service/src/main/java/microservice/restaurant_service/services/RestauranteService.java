@@ -1,5 +1,6 @@
 package microservice.restaurant_service.services;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,9 +9,11 @@ import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioAdminCreationDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
 import microservice.restaurant_service.entity.Direccion;
+import microservice.restaurant_service.entity.Favorito;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.feign.UsuarioFeign;
 import microservice.restaurant_service.repositories.RestauranteRepository;
+import microservice.restaurant_service.repositories.FavoritoRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +24,12 @@ public class RestauranteService {
 
     private final RestauranteRepository restauranteRepository;
     private final UsuarioFeign usuarioFeign;
+    private final FavoritoRepository favoritoRepository;
 
-    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign) {
+    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign, FavoritoRepository favoritoRepository) {
         this.restauranteRepository = restauranteRepository;
         this.usuarioFeign = usuarioFeign;
+        this.favoritoRepository = favoritoRepository;
     }
 
     // 1. Listar todos los restaurantes (DTO)
@@ -256,4 +261,40 @@ public class RestauranteService {
                 .map(this::mapearADTO)
                 .collect(Collectors.toList());
     }
+
+    // Inyectar FavoritoRepository
+
+// 1. TOGGLE FAVORITO (Dar/Quitar Like)
+public boolean toggleFavorito(Long restauranteId, Long usuarioId) {
+    Optional<Favorito> existente = favoritoRepository.findByUsuarioIdAndRestauranteId(usuarioId, restauranteId);
+    
+    if (existente.isPresent()) {
+        favoritoRepository.delete(existente.get());
+        return false; // Ya no es favorito (se quitó)
+    } else {
+        Restaurante restaurante = restauranteRepository.findById(restauranteId)
+            .orElseThrow(() -> new IllegalArgumentException("Restaurante no encontrado"));
+            
+        Favorito nuevo = new Favorito();
+        nuevo.setUsuarioId(usuarioId);
+        nuevo.setRestaurante(restaurante);
+        favoritoRepository.save(nuevo);
+        return true; // Ahora es favorito (se agregó)
+    }
+}
+
+// 2. MIS FAVORITOS
+public List<RestauranteDTO> obtenerMisFavoritos(Long usuarioId) {
+    return favoritoRepository.findAllByUsuarioId(usuarioId).stream()
+            .map(this::mapearADTO)
+            .collect(Collectors.toList());
+}
+
+// 3. TOP POPULARES
+public List<RestauranteDTO> obtenerMasPopulares(int limite) {
+    // PageRequest para traer solo los top 5 o 10
+    return favoritoRepository.findTopPopulares(PageRequest.of(0, limite)).stream()
+            .map(this::mapearADTO)
+            .collect(Collectors.toList());
+}
 }
