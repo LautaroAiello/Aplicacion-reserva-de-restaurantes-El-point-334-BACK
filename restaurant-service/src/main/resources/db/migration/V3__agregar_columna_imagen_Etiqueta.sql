@@ -1,0 +1,1 @@
+ALTER TABLE etiqueta ADD COLUMN imagen_url VARCHAR(500);

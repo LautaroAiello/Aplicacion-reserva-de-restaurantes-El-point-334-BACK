@@ -18,6 +18,7 @@ import microservice.reserva_service.services.feign.RestauranteFeign;
 import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
 import microservice.reserva_service.services.dto.ReservaHechaEvent;
+import microservice.reserva_service.services.dto.ReservaResponseDTO;
 import microservice.reserva_service.services.dto.RestauranteDTO;
 import microservice.reserva_service.config.RabbitMQReservaConfig;
 import microservice.reserva_service.entity.Reserva;
@@ -352,5 +353,41 @@ public class ReservaService {
         }
 
     } 
+
+    public List<ReservaResponseDTO> listarReservasPorRestaurante(Long restauranteId) {
+        List<Reserva> reservas = reservaRepository.findByRestauranteId(restauranteId);
+        
+        return reservas.stream().map(reserva -> {
+            ReservaResponseDTO dto = new ReservaResponseDTO();
+            dto.setId(reserva.getId());
+            dto.setFechaHora(reserva.getFechaHora());
+            dto.setCantidadPersonas(reserva.getCantidadPersonas());
+            dto.setEstado(reserva.getEstado());
+            dto.setObservaciones(reserva.getObservaciones());
+            dto.setUsuarioId(reserva.getUsuarioId());
+            
+            // Llamada a Feign para obtener nombre del cliente
+            // NOTA: Esto puede ser lento si hay muchas. En prod se cachea o se guarda el nombre en la reserva.
+            try {
+                // Usamos un token interno o asumimos que la llamada está permitida
+                UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(reserva.getUsuarioId()); 
+                if (usuario != null) {
+                    dto.setNombreCliente(usuario.getNombre());
+                    dto.setApellidoCliente(usuario.getApellido());
+                }
+            } catch (Exception e) {
+                dto.setNombreCliente("Usuario");
+                dto.setApellidoCliente("Desconocido (" + reserva.getUsuarioId() + ")");
+            }
+            
+            // Mapear mesas
+            List<Long> mesasIds = reserva.getMesasReservadas().stream()
+                .map(rm -> rm.getMesaId())
+                .collect(Collectors.toList());
+            dto.setMesasIds(mesasIds);
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
 
 }

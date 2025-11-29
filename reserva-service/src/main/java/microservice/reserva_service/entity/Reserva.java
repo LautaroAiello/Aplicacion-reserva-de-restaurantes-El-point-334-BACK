@@ -3,6 +3,8 @@ package microservice.reserva_service.entity;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -37,6 +39,7 @@ public class Reserva {
 
     
     @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<ReservaMesa> mesasReservadas;
 
 

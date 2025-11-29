@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.services.ReservaService;
 import microservice.reserva_service.services.feign.UsuarioFeign;
+import microservice.reserva_service.services.dto.ReservaResponseDTO;
 import microservice.reserva_service.services.dto.UsuarioDTO;
 
 @RestController
@@ -125,4 +126,9 @@ public class ReservaController {
         }
     }
 
+    // GET /reservas/restaurante/{id}
+    @GetMapping("/restaurante/{restauranteId}")
+    public ResponseEntity<List<ReservaResponseDTO>> obtenerPorRestaurante(@PathVariable Long restauranteId) {
+        return ResponseEntity.ok(reservaService.listarReservasPorRestaurante(restauranteId));
+    }
 }

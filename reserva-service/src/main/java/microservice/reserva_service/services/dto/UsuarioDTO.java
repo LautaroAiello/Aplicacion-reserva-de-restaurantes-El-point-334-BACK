@@ -6,11 +6,20 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class UsuarioDTO {
     private Long id;
     private String nombre;
+    private String apellido;
+    
     private String email;
     private String telefono;
 
     // private java.util.List<String> roles;
     // private java.util.List<RestauranteRoleDTO> restauranteRoles;
+
+    public String getApellido() {
+        return apellido;
+    }
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
+    }
 
     public String getTelefono() {
         return telefono;
