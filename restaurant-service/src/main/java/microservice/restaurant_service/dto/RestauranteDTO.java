@@ -1,5 +1,4 @@
 package microservice.restaurant_service.dto;
-import microservice.restaurant_service.dto.ConfiguracionRestauranteDTO;
 import java.time.LocalTime;
 
 public class RestauranteDTO {
@@ -29,7 +28,14 @@ public class RestauranteDTO {
     private String emailUsuario;
     private String passwordUsuario;
     private String telefonoUsuario;
+    private boolean esFavorito;
 
+    public boolean isEsFavorito() {
+        return esFavorito;
+    }
+    public void setEsFavorito(boolean esFavorito) {
+        this.esFavorito = esFavorito;
+    }
     public String getNombreUsuario() {
         return nombreUsuario;
     }

@@ -26,4 +26,7 @@ public interface FavoritoRepository extends JpaRepository<Favorito, Long> {
            "GROUP BY f.restaurante " +
            "ORDER BY COUNT(f) DESC")
     List<Restaurante> findTopPopulares(Pageable pageable);
+
+    @Query("SELECT f.restaurante.id FROM Favorito f WHERE f.usuarioId = :usuarioId")
+    List<Long> findRestauranteIdsByUsuarioId(@Param("usuarioId") Long usuarioId);
 }

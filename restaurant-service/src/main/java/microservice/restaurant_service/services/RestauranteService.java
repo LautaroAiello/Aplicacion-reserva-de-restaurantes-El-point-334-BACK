@@ -33,12 +33,30 @@ public class RestauranteService {
     }
 
     // 1. Listar todos los restaurantes (DTO)
-    public List<RestauranteDTO> listarRestaurantesDTO() {
-        List<Restaurante> restaurantes = restauranteRepository.findAll();
-        return restaurantes.stream()
-                .map(this::mapearADTO)
-                .collect(Collectors.toList());
-    }
+    public List<RestauranteDTO> listarRestaurantesDTO(Long usuarioId) {
+    
+    // 1. Traer todos los restaurantes
+    List<Restaurante> restaurantes = restauranteRepository.findAll();
+
+    // 2. Obtener los IDs de los restaurantes que ESTE usuario marcó como favoritos
+    // Usamos una lista vacía si el usuarioId es null (usuario no logueado)
+    List<Long> idsFavoritos = (usuarioId != null) 
+        ? favoritoRepository.findRestauranteIdsByUsuarioId(usuarioId) 
+        : List.of(); 
+
+    // 3. Mapear y marcar cuáles son favoritos
+    return restaurantes.stream()
+        .map(r -> {
+            RestauranteDTO dto = mapearADTO(r);
+            
+            // Aquí la magia: Si el ID del restaurante está en la lista de favoritos del usuario -> true
+            boolean esFav = idsFavoritos.contains(r.getId());
+            dto.setEsFavorito(esFav);
+            
+            return dto;
+        })
+        .collect(Collectors.toList());
+}
 
     private RestauranteDTO mapearADTO(Restaurante restaurante) {
         RestauranteDTO dto = new RestauranteDTO();
@@ -291,10 +309,25 @@ public List<RestauranteDTO> obtenerMisFavoritos(Long usuarioId) {
 }
 
 // 3. TOP POPULARES
-public List<RestauranteDTO> obtenerMasPopulares(int limite) {
-    // PageRequest para traer solo los top 5 o 10
-    return favoritoRepository.findTopPopulares(PageRequest.of(0, limite)).stream()
-            .map(this::mapearADTO)
+public List<RestauranteDTO> obtenerMasPopulares(int limite, Long usuarioId) {
+        
+        // 1. Pedimos al Repo los "limite" (ej. 10) restaurantes con más likes
+        // PageRequest.of(0, limite) es como decir "LIMIT 10" en SQL
+        List<Restaurante> populares = favoritoRepository.findTopPopulares(PageRequest.of(0, limite));
+
+        // 2. Si hay un usuario logueado, buscamos SUS favoritos para marcar la UI
+        List<Long> misFavoritosIds = (usuarioId != null) 
+            ? favoritoRepository.findRestauranteIdsByUsuarioId(usuarioId) 
+            : List.of();
+
+        // 3. Convertimos a DTO
+        return populares.stream()
+            .map(r -> {
+                RestauranteDTO dto = mapearADTO(r);
+                // Si el restaurante popular también es MI favorito, true
+                dto.setEsFavorito(misFavoritosIds.contains(r.getId())); 
+                return dto;
+            })
             .collect(Collectors.toList());
-}
+    }
 }

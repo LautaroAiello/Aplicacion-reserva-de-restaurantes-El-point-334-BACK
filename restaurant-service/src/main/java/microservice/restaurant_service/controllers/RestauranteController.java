@@ -36,18 +36,14 @@ public class RestauranteController {
     //     return restauranteService.listarTodos();
     // }
 
-    @GetMapping // Mapea a GET /restaurantes
-    public ResponseEntity<List<RestauranteDTO>> obtenerTodos() {
-    // 1. Llamar al servicio que devuelve DTOs
-    List<RestauranteDTO> lista = restauranteService.listarRestaurantesDTO();
-    
-    if (lista.isEmpty()) {
-        return ResponseEntity.noContent().build(); // Devuelve 204 si no hay nada
+    @GetMapping
+    public ResponseEntity<List<RestauranteDTO>> obtenerTodos(@RequestParam(required = false) Long usuarioId) {
+        // 💡 required = false es CRÍTICO porque un usuario no logueado (null) también puede ver restaurantes
+        // Pasamos el ID (puede ser null o un número) al servicio
+        List<RestauranteDTO> lista = restauranteService.listarRestaurantesDTO(usuarioId);
+        return ResponseEntity.ok(lista);
     }
     
-    // 2. Devolver la lista limpia
-    return ResponseEntity.ok(lista);
-}
     // GET /restaurantes/{id}
     @GetMapping("/{id}")
     public ResponseEntity<RestauranteDTO> obtenerPorId(@PathVariable Long id) {

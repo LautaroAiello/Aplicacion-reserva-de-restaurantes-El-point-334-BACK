@@ -31,7 +31,10 @@ public class FavoritoController {
 
     // GET /favoritos/populares?top=5
     @GetMapping("/populares")
-    public ResponseEntity<List<RestauranteDTO>> rankingPopulares(@RequestParam(defaultValue = "5") int top) {
-        return ResponseEntity.ok(restauranteService.obtenerMasPopulares(top));
+    public ResponseEntity<List<RestauranteDTO>> rankingPopulares(
+            @RequestParam(defaultValue = "10") int top,     // Cuántos traer
+            @RequestParam(required = false) Long usuarioId  // Quién está preguntando
+    ) {
+        return ResponseEntity.ok(restauranteService.obtenerMasPopulares(top, usuarioId));
     }
 }
