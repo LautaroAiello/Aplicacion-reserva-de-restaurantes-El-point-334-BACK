@@ -5,14 +5,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auth_service.dto.UsuarioAdminCreationDTO;
 import com.auth_service.entity.Usuario;
+import com.auth_service.entity.UsuarioRestaurante;
+import com.auth_service.repositories.UsuarioRepository;
+import com.auth_service.repositories.UsuarioRestauranteRepository;
 import com.auth_service.services.UsuarioService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,6 +31,11 @@ import io.jsonwebtoken.Claims;
 public class UsuarioController {
     private final UsuarioService usuarioService;
     private final JwtUtil jwtUtil;
+
+    @Autowired
+    private UsuarioRestauranteRepository usuarioRestauranteRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public UsuarioController(UsuarioService usuarioService, JwtUtil jwtUtil){
         this.usuarioService = usuarioService;
@@ -140,5 +151,45 @@ public class UsuarioController {
         return ResponseEntity.ok(resp);
     }
     
-
+     // NUEVO: Listar usuarios por restaurante y rol (Para uso interno de microservicios)
+    @GetMapping("/restaurante/{restauranteId}/rol/{rol}")
+    public ResponseEntity<List<Usuario>> listarPorRestauranteYRol(
+            @PathVariable Long restauranteId, 
+            @PathVariable String rol) {
+        
+        // 1. Buscar las relaciones en la tabla intermedia
+        List<UsuarioRestaurante> relaciones = usuarioRestauranteRepository.findByRestauranteIdAndRol(restauranteId, rol);
+        
+        // 2. Obtener los IDs de los usuarios
+        List<Long> userIds = relaciones.stream()
+                .map(UsuarioRestaurante::getUsuarioId)
+                .collect(Collectors.toList());
+        
+        // 3. Buscar los datos completos de los usuarios
+        List<Usuario> usuarios = usuarioRepository.findAllById(userIds);
+        
+        return ResponseEntity.ok(usuarios);
+    }
+    
+    // NUEVO: Eliminar relación de gestor
+    @DeleteMapping("/restaurante/{restauranteId}/gestor/{usuarioId}")
+    public ResponseEntity<Void> eliminarGestor(
+            @PathVariable Long restauranteId, 
+            @PathVariable Long usuarioId) {
+            
+        // Buscamos la relación específica
+        // (Podrías crear un método en el repo findByUsuarioIdAndRestauranteId)
+        List<UsuarioRestaurante> relaciones = usuarioRestauranteRepository.findByRestauranteIdAndRol(restauranteId, "GESTOR");
+        
+        relaciones.stream()
+            .filter(ur -> ur.getUsuarioId().equals(usuarioId))
+            .findFirst()
+            .ifPresent(ur -> {
+                usuarioRestauranteRepository.delete(ur);
+                // Opcional: Si quieres borrar el usuario completo también:
+                usuarioRepository.deleteById(usuarioId); 
+            });
+            
+        return ResponseEntity.noContent().build();
+    }
 }

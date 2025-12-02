@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
+import microservice.restaurant_service.dto.UsuarioDTO;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.services.RestauranteService;
 
@@ -87,12 +88,17 @@ public class RestauranteController {
 
     // PUT /restaurantes/{id}
     @PutMapping("/{id}")
-    // Cambiamos @RequestBody Restaurante a @RequestBody RestauranteDTO
-    public ResponseEntity<Restaurante> actualizarRestaurante(@PathVariable Long id, @RequestBody RestauranteDTO restauranteDTO) {
+    // 1. Cambiamos el tipo de retorno a ResponseEntity<RestauranteDTO>
+    public ResponseEntity<RestauranteDTO> actualizarRestaurante(@PathVariable Long id, @RequestBody RestauranteDTO restauranteDTO) {
         try {
-            // Llamamos al servicio con el DTO
+            // 2. Llamamos al servicio (esto guarda en BD)
             Restaurante actualizado = restauranteService.actualizarRestaurante(id, restauranteDTO);
-            return ResponseEntity.ok(actualizado);
+            
+            // 3. Convertimos a DTO antes de devolver (¡Esto evita el error 500!)
+            RestauranteDTO respuestaDTO = restauranteService.mapearADTO(actualizado);
+            
+            return ResponseEntity.ok(respuestaDTO);
+            
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -116,5 +122,24 @@ public class RestauranteController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+     // GET /restaurantes/{id}/gestores
+   @GetMapping("/{restauranteId}/gestores")
+    public ResponseEntity<List<UsuarioDTO>> listarGestores(@PathVariable Long restauranteId) {
+        try {
+            // Cambiar el tipo de la variable
+            List<UsuarioDTO> gestores = restauranteService.listarGestores(restauranteId);
+            return ResponseEntity.ok(gestores);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // DELETE /restaurantes/{id}/gestores/{gestorId}
+    @DeleteMapping("/{restauranteId}/gestores/{gestorId}")
+    public ResponseEntity<Void> eliminarGestor(@PathVariable Long restauranteId, @PathVariable Long gestorId) {
+        restauranteService.eliminarGestor(restauranteId, gestorId);
+        return ResponseEntity.noContent().build();
     }
 }

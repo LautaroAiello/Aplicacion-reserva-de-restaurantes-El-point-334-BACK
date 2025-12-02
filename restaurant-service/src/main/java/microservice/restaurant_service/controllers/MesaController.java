@@ -53,4 +53,14 @@ public class MesaController {
         mesaService.eliminarMesa(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Mesa> actualizarMesa(@PathVariable Long id, @RequestBody Mesa mesaDetalles) {
+        try {
+            Mesa mesaActualizada = mesaService.actualizarMesa(id, mesaDetalles);
+            return ResponseEntity.ok(mesaActualizada);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

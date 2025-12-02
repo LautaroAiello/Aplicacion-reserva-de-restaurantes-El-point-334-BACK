@@ -1,0 +1,1 @@
+ALTER TABLE reserva ADD COLUMN email_cliente VARCHAR(255);

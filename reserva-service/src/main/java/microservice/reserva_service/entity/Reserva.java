@@ -17,6 +17,9 @@ public class Reserva {
     @Column(name = "usuario_id", nullable = false)
     private Long usuarioId;
 
+    @Column(name = "email_cliente")
+    private String emailCliente;
+
     @Column(name = "restaurante_id", nullable = false)
     private Long restauranteId;
 
@@ -39,7 +42,7 @@ public class Reserva {
 
     
     @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    // @JsonIgnore
     private List<ReservaMesa> mesasReservadas;
 
 
@@ -67,6 +70,14 @@ public class Reserva {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public String getEmailCliente() {
+        return emailCliente;
+    }
+
+    public void setEmailCliente(String emailCliente) {
+        this.emailCliente = emailCliente;
     }
 
     public Long getRestauranteId() {

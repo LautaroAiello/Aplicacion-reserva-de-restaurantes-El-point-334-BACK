@@ -51,4 +51,20 @@ public class MesaService {
     public Optional<Mesa> obtenerMesaId(Long id) {
         return mesaRepository.findById(id);
     }
+
+    // Método para actualizar mesa
+    public Mesa actualizarMesa(Long id, Mesa detalles) {
+        return mesaRepository.findById(id)
+            .map(mesa -> {
+                mesa.setDescripcion(detalles.getDescripcion());
+                mesa.setCapacidad(detalles.getCapacidad());
+                mesa.setBloqueada(detalles.getBloqueada());
+                // Si usas posición, actualízala también:
+                // mesa.setPosicionX(detalles.getPosicionX());
+                // mesa.setPosicionY(detalles.getPosicionY());
+                
+                return mesaRepository.save(mesa);
+            })
+            .orElseThrow(() -> new RuntimeException("Mesa no encontrada con ID: " + id));
+    }
 }

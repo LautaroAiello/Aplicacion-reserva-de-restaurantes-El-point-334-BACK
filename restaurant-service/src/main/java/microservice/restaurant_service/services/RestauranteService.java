@@ -8,6 +8,7 @@ import microservice.restaurant_service.dto.DireccionDTO;
 import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioAdminCreationDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
+import microservice.restaurant_service.dto.UsuarioDTO;
 import microservice.restaurant_service.entity.Direccion;
 import microservice.restaurant_service.entity.Favorito;
 import microservice.restaurant_service.entity.Restaurante;
@@ -58,7 +59,7 @@ public class RestauranteService {
         .collect(Collectors.toList());
 }
 
-    private RestauranteDTO mapearADTO(Restaurante restaurante) {
+    public RestauranteDTO mapearADTO(Restaurante restaurante) {
         RestauranteDTO dto = new RestauranteDTO();
         dto.setId(restaurante.getId());
         dto.setNombre(restaurante.getNombre());
@@ -330,4 +331,16 @@ public List<RestauranteDTO> obtenerMasPopulares(int limite, Long usuarioId) {
             })
             .collect(Collectors.toList());
     }
+
+     // Listar gestores: llama al auth-service a través de Feign
+    public List<UsuarioDTO> listarGestores(Long restauranteId) {
+        // "GESTOR" es el rol que buscamos
+        return usuarioFeign.obtenerUsuariosPorRestauranteYRol(restauranteId, "GESTOR");
+    }
+
+    // Eliminar gestor: llama al auth-service a través de Feign
+    public void eliminarGestor(Long restauranteId, Long usuarioId) {
+        usuarioFeign.eliminarGestor(restauranteId, usuarioId);
+    }
+
 }

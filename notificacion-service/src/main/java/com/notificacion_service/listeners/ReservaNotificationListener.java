@@ -29,6 +29,7 @@ public class ReservaNotificationListener {
         
         String tipo = "EMAIL";
         String destinatario = event.getEmailUsuario();
+        System.out.println("👉 INTENTANDO ENVIAR A: [" + event.getEmailUsuario() + "]");
         String asunto = "✅ ¡Reserva Confirmada en " + event.getRestauranteNombre() + "!";
 
         // --- 1. INTENTO DE ENVÍO DE EMAIL (Con try-catch para Resiliencia) ---

@@ -42,7 +42,9 @@ public class SecurityConfig {
                 ).permitAll()
                 
                 // Permite el "pre-vuelo" OPTIONS de CORS
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/usuarios/restaurante/**").permitAll() // <-- AGREGA ESTO
+                .requestMatchers(HttpMethod.DELETE, "/usuarios/restaurante/**").permitAll() // <-- AGREGA ESTO 
                 
                 // Protege el resto de rutas
                 .anyRequest().authenticated() 

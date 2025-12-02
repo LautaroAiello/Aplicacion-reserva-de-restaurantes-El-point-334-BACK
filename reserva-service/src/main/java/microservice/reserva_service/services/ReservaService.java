@@ -98,71 +98,150 @@ public class ReservaService {
                 .orElseThrow(() -> new NoSuchElementException("Reserva no encontrada con ID: " + id));
     }
 
+    // @Transactional
+    // public Reserva crearReserva(Reserva reserva) {
+    //     //Obtenemos usuarioId y restauranteId de la reserva
+    //     Long userId = reserva.getUsuarioId();
+    //     Long restauranteId = reserva.getRestauranteId();
+        
+        
+    //     // Validar que la fecha y hora no sean en el pasado
+    //     if (reserva.getFechaHora().isBefore(LocalDateTime.now())) {
+    //         throw new RuntimeException("No se puede crear una reserva en el pasado.");
+    //     }
+
+    //     // --- 1. VALIDACIÓN DE EXISTENCIA DE RECURSOS (ORQUESTACIÓN) ---
+
+    //     // Validar que el usuario exista en el Auth Service
+    //     UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
+    //     if (usuario == null) {
+    //          throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
+    //     }
+
+    //     // Validar que el restaurante exista en el Restaurant Service
+    //     RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(restauranteId);
+    //     if (restaurante == null) {
+    //         throw new RuntimeException("Restaurante con ID " + restauranteId + " no encontrado.");
+    //     }
+    //     // Validar que la reserva incluya al menos una mesa
+    //     if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
+    //          throw new RuntimeException("La reserva debe incluir al menos una mesa.");
+    //     }
+
+    //     for (ReservaMesa rm : reserva.getMesasReservadas()) {
+    //         Long mesaId = rm.getMesaId();
+    //         // Llama al Feign Client con ambos IDs para validar la pertenencia
+    //         MesaDTO mesa = restauranteFeign.obtenerMesaPorIdYRestaurante(restauranteId, mesaId);
+            
+    //         if (mesa == null) {
+    //              throw new RuntimeException("Mesa con ID " + mesaId + " no existe o no pertenece al Restaurante " + restauranteId + ".");
+    //         }
+    //         // Establece la relación bidireccional (esto lo tenías bien)
+    //         rm.setReserva(reserva); 
+    //     }
+
+    //     // --- 2. LÓGICA DE NEGOCIO Y DISPONIBILIDAD ---
+    //     validarCapacidadYHorario(reserva, restaurante);
+        
+    //     // 1. Lógica de Negocio (Ej: Verificar disponibilidad de mesas - Opcional por ahora)
+    //     validarDisponibilidadPorSolapamiento(reserva.getMesasReservadas(), reserva.getFechaHora());
+
+    //     // 3. ESTABLECER FECHA DE CREACIÓN Y ESTADO INICIAL
+    //     reserva.setFechaCreacion(LocalDateTime.now());
+    //     if (reserva.getEstado() == null) {
+    //         reserva.setEstado("PENDIENTE"); 
+    //     }
+
+    //     // 4. VALIDACIONES COMPLEJAS DE NEGOCIO (CAPACIDAD, HORARIO, ANTICIPACIÓN, ETC.) QUESOOOOOOOOOOO
+
+    //     Reserva reservaGuardada = reservaRepository.save(reserva);
+
+    //     ReservaHechaEvent event = new ReservaHechaEvent(
+    //         reservaGuardada.getId(),
+    //         restaurante.getNombre(),
+    //         reservaGuardada.getFechaHora(),
+    //         reservaGuardada.getCantidadPersonas(),
+    //         usuario.getEmail(),
+    //         usuario.getTelefono()
+    //     );
+
+    //     rabbitTemplate.convertAndSend(
+    //         RabbitMQReservaConfig.EXCHANGE_NAME, 
+    //         RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
+    //         event
+    //     );
+
+    //     return reservaGuardada;
+    // }
+
+     // -------------------------------------------------------
+    // MÉTODO CREAR RESERVA (OPTIMIZADO Y CORREGIDO)
+    // -------------------------------------------------------
     @Transactional
     public Reserva crearReserva(Reserva reserva) {
-        //Obtenemos usuarioId y restauranteId de la reserva
         Long userId = reserva.getUsuarioId();
         Long restauranteId = reserva.getRestauranteId();
         
-        
-        // Validar que la fecha y hora no sean en el pasado
         if (reserva.getFechaHora().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("No se puede crear una reserva en el pasado.");
         }
 
-        // --- 1. VALIDACIÓN DE EXISTENCIA DE RECURSOS (ORQUESTACIÓN) ---
-
-        // Validar que el usuario exista en el Auth Service
+        // 1. Validar Usuario
         UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
         if (usuario == null) {
-             throw new RuntimeException("Usuario con ID " + userId + " no encontrado. No se puede crear la reserva.");
+             throw new RuntimeException("Usuario con ID " + userId + " no encontrado.");
         }
 
-        // Validar que el restaurante exista en el Restaurant Service
+        // 2. Validar Restaurante
         RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(restauranteId);
         if (restaurante == null) {
             throw new RuntimeException("Restaurante con ID " + restauranteId + " no encontrado.");
         }
-        // Validar que la reserva incluya al menos una mesa
+
+        // 3. Validar que haya mesas seleccionadas
         if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
              throw new RuntimeException("La reserva debe incluir al menos una mesa.");
         }
 
-        for (ReservaMesa rm : reserva.getMesasReservadas()) {
-            Long mesaId = rm.getMesaId();
-            // Llama al Feign Client con ambos IDs para validar la pertenencia
-            MesaDTO mesa = restauranteFeign.obtenerMesaPorIdYRestaurante(restauranteId, mesaId);
-            
-            if (mesa == null) {
-                 throw new RuntimeException("Mesa con ID " + mesaId + " no existe o no pertenece al Restaurante " + restauranteId + ".");
-            }
-            // Establece la relación bidireccional (esto lo tenías bien)
-            rm.setReserva(reserva); 
-        }
+        // --- LÓGICA DE NEGOCIO CENTRALIZADA ---
+        // Eliminamos el bucle 'for' redundante que había aquí.
+        // Ahora confiamos en tus métodos para validar y vincular las mesas.
 
-        // --- 2. LÓGICA DE NEGOCIO Y DISPONIBILIDAD ---
+        // Valida capacidad, horario y vincula (rm.setReserva)
         validarCapacidadYHorario(reserva, restaurante);
         
-        // 1. Lógica de Negocio (Ej: Verificar disponibilidad de mesas - Opcional por ahora)
+        // Valida solapamiento de horarios
         validarDisponibilidadPorSolapamiento(reserva.getMesasReservadas(), reserva.getFechaHora());
 
-        // 3. ESTABLECER FECHA DE CREACIÓN Y ESTADO INICIAL
+        // 4. Completar datos de la reserva
         reserva.setFechaCreacion(LocalDateTime.now());
         if (reserva.getEstado() == null) {
             reserva.setEstado("PENDIENTE"); 
         }
 
-        // 4. VALIDACIONES COMPLEJAS DE NEGOCIO (CAPACIDAD, HORARIO, ANTICIPACIÓN, ETC.) QUESOOOOOOOOOOO
-
         Reserva reservaGuardada = reservaRepository.save(reserva);
+
+        // --- NOTIFICACIÓN (Email correcto) ---
+        String emailDestino;
+        String telefonoDestino;
+
+        if (reserva.getEmailCliente() != null && !reserva.getEmailCliente().isEmpty()) {
+            emailDestino = reserva.getEmailCliente();
+            telefonoDestino = ""; 
+            System.out.println("📧 Usando email manual: " + emailDestino);
+        } else {
+            emailDestino = usuario.getEmail();
+            telefonoDestino = usuario.getTelefono();
+            System.out.println("📧 Usando email de usuario registrado: " + emailDestino);
+        }
 
         ReservaHechaEvent event = new ReservaHechaEvent(
             reservaGuardada.getId(),
             restaurante.getNombre(),
             reservaGuardada.getFechaHora(),
             reservaGuardada.getCantidadPersonas(),
-            usuario.getEmail(),
-            usuario.getTelefono()
+            emailDestino,
+            telefonoDestino
         );
 
         rabbitTemplate.convertAndSend(
@@ -174,33 +253,124 @@ public class ReservaService {
         return reservaGuardada;
     }
 
-
+    // -------------------------------------------------------
+    // ACTUALIZAR RESERVA
+    // -------------------------------------------------------
     @Transactional
     public Reserva actualizarReserva(Long id, Reserva datosReserva) {
-        // 1. Encontrar la reserva existente o lanzar un error si no existe
         Reserva reservaExistente = obtenerPorId(id); 
 
-        // 2. Aplicar los cambios necesarios
-        reservaExistente.setFechaHora(datosReserva.getFechaHora());
-        reservaExistente.setCantidadPersonas(datosReserva.getCantidadPersonas());
-        reservaExistente.setEstado(datosReserva.getEstado());
-        reservaExistente.setObservaciones(datosReserva.getObservaciones());
+        if (datosReserva.getFechaHora() != null) reservaExistente.setFechaHora(datosReserva.getFechaHora());
+        if (datosReserva.getCantidadPersonas() != null) reservaExistente.setCantidadPersonas(datosReserva.getCantidadPersonas());
+        if (datosReserva.getObservaciones() != null) reservaExistente.setObservaciones(datosReserva.getObservaciones());
+        
+        if (datosReserva.getEstado() != null) {
+            String estadoAnterior = reservaExistente.getEstado(); 
+            String nuevoEstado = datosReserva.getEstado().toUpperCase(); 
+            
+            reservaExistente.setEstado(nuevoEstado);
 
-        // Actualizar mesas reservadas (si se envía una nueva lista)
-        if (datosReserva.getMesasReservadas() != null) {
-            reservaExistente.getMesasReservadas().clear();
-            for (ReservaMesa nuevaMesa : datosReserva.getMesasReservadas()) {
-                nuevaMesa.setReserva(reservaExistente); // Relación bidireccional
-                reservaExistente.getMesasReservadas().add(nuevaMesa);
+            if (!"CONFIRMADA".equals(estadoAnterior) && "CONFIRMADA".equals(nuevoEstado)) {
+                enviarNotificacionConfirmacion(reservaExistente);
             }
         }
 
-        // NOTA: La lógica de actualización de mesas y verificación de disponibilidad
-        // es compleja y debería ser implementada aquí si se cambian fechas/mesas.
+        if (datosReserva.getMesasReservadas() != null && !datosReserva.getMesasReservadas().isEmpty()) {
+            reservaExistente.getMesasReservadas().clear();
+            for (ReservaMesa nuevaMesa : datosReserva.getMesasReservadas()) {
+                nuevaMesa.setReserva(reservaExistente);
+                reservaExistente.getMesasReservadas().add(nuevaMesa);
+            }
+            // Idealmente aquí también deberíamos re-validar disponibilidad si cambian las mesas
+        }
 
-        // 3. Guardar y retornar la reserva actualizada
         return reservaRepository.save(reservaExistente);
     }
+
+    // Método auxiliar para notificar confirmaciones
+    private void enviarNotificacionConfirmacion(Reserva reserva) {
+        try {
+            String emailDestino = null;
+            String telefonoDestino = null;
+
+            if (reserva.getEmailCliente() != null && !reserva.getEmailCliente().isEmpty()) {
+                emailDestino = reserva.getEmailCliente();
+            } else {
+                UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(reserva.getUsuarioId());
+                if (usuario != null) {
+                    emailDestino = usuario.getEmail();
+                    telefonoDestino = usuario.getTelefono();
+                }
+            }
+
+            if (emailDestino == null) return;
+
+            String nombreRestaurante = "Restaurante";
+            try {
+                RestauranteDTO rest = restauranteFeign.obtenerRestaurantePorId(reserva.getRestauranteId());
+                if (rest != null) nombreRestaurante = rest.getNombre();
+            } catch (Exception e) {}
+
+            ReservaHechaEvent event = new ReservaHechaEvent(
+                reserva.getId(),
+                nombreRestaurante,
+                reserva.getFechaHora(),
+                reserva.getCantidadPersonas(),
+                emailDestino,
+                telefonoDestino
+            );
+
+            rabbitTemplate.convertAndSend(
+                RabbitMQReservaConfig.EXCHANGE_NAME, 
+                RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
+                event
+            );
+            System.out.println("✅ Notificación de CONFIRMACIÓN enviada a: " + emailDestino);
+            
+        } catch (Exception e) {
+            System.err.println("Error notificación: " + e.getMessage());
+        }
+    }
+
+    // // Asegúrate de tener este helper también actualizado:
+    // private String extraerEmailDeObservaciones(String obs) {
+    //     if (obs == null) return null;
+    //     // Regex busca cualquier string con formato de email
+    //     java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}");
+    //     java.util.regex.Matcher matcher = pattern.matcher(obs);
+        
+    //     if (matcher.find()) {
+    //         return matcher.group();
+    //     }
+    //     return null;
+    // }
+
+    // @Transactional
+    // public Reserva actualizarReserva(Long id, Reserva datosReserva) {
+    //     // 1. Encontrar la reserva existente o lanzar un error si no existe
+    //     Reserva reservaExistente = obtenerPorId(id); 
+
+    //     // 2. Aplicar los cambios necesarios
+    //     reservaExistente.setFechaHora(datosReserva.getFechaHora());
+    //     reservaExistente.setCantidadPersonas(datosReserva.getCantidadPersonas());
+    //     reservaExistente.setEstado(datosReserva.getEstado());
+    //     reservaExistente.setObservaciones(datosReserva.getObservaciones());
+
+    //     // Actualizar mesas reservadas (si se envía una nueva lista)
+    //     if (datosReserva.getMesasReservadas() != null) {
+    //         reservaExistente.getMesasReservadas().clear();
+    //         for (ReservaMesa nuevaMesa : datosReserva.getMesasReservadas()) {
+    //             nuevaMesa.setReserva(reservaExistente); // Relación bidireccional
+    //             reservaExistente.getMesasReservadas().add(nuevaMesa);
+    //         }
+    //     }
+
+    //     // NOTA: La lógica de actualización de mesas y verificación de disponibilidad
+    //     // es compleja y debería ser implementada aquí si se cambian fechas/mesas.
+
+    //     // 3. Guardar y retornar la reserva actualizada
+    //     return reservaRepository.save(reservaExistente);
+    // }
 
     @Transactional
     public void eliminarReserva(Long id) {
@@ -283,10 +453,27 @@ public class ReservaService {
         LocalTime horaReserva = reserva.getFechaHora().toLocalTime();
         LocalTime horarioApertura = restaurante.getHorarioApertura();
         LocalTime horarioCierre = restaurante.getHorarioCierre();
-        if (horaReserva.isBefore(horarioApertura) || horaReserva.isAfter(horarioCierre)) {
-            // Formateador para mostrar el horario de forma limpia (ej: 12:00)
-            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+         boolean horarioValido = false;
+         // Caso A: Horario Normal (Ej: 09:00 a 18:00) -> Cierre es después de Apertura
+        if (horarioCierre.isAfter(horarioApertura)) {
+            // Debe estar DENTRO del rango: (hora >= apertura Y hora <= cierre)
+            if (!horaReserva.isBefore(horarioApertura) && !horaReserva.isAfter(horarioCierre)) {
+                horarioValido = true;
+            }
+        } 
+        // Caso B: Cruza Medianoche (Ej: 20:00 a 00:00 o 20:00 a 02:00) -> Cierre es antes o igual (00:00)
+        else {
+            // Debe estar EN LOS EXTREMOS: (hora >= apertura O hora <= cierre)
+            // Ej: 20:30 >= 20:00 (True) -> Válido
+            // Ej: 01:00 <= 02:00 (True) -> Válido
+            // Ej: 10:00 no es >= 20:00 y no es <= 02:00 -> Inválido
+            if (!horaReserva.isBefore(horarioApertura) || !horaReserva.isAfter(horarioCierre)) {
+                horarioValido = true;
+            }
+        }
 
+        if (!horarioValido) {
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
             throw new IllegalArgumentException(
                 "El restaurante solo acepta reservas entre las " + horarioApertura.format(timeFormatter) + 
                 " y las " + horarioCierre.format(timeFormatter) + "."
