@@ -3,6 +3,7 @@ package microservice.reserva_service.services;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -16,6 +17,7 @@ import microservice.reserva_service.services.dto.UsuarioDTO;
 import microservice.reserva_service.services.feign.UsuarioFeign;
 import microservice.reserva_service.services.feign.RestauranteFeign;
 import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
+import microservice.reserva_service.services.dto.CrearReservaRequestDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
 import microservice.reserva_service.services.dto.ReservaHechaEvent;
 import microservice.reserva_service.services.dto.ReservaResponseDTO;
@@ -177,78 +179,112 @@ public class ReservaService {
      // -------------------------------------------------------
     // MÉTODO CREAR RESERVA (OPTIMIZADO Y CORREGIDO)
     // -------------------------------------------------------
-    @Transactional
-    public Reserva crearReserva(Reserva reserva) {
-        Long userId = reserva.getUsuarioId();
-        Long restauranteId = reserva.getRestauranteId();
+@Transactional
+    public Reserva crearReserva(CrearReservaRequestDTO request) { // 💡 Recibe el DTO
         
-        if (reserva.getFechaHora().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("No se puede crear una reserva en el pasado.");
+        // --- 1. VALIDACIONES BÁSICAS DEL DTO ---
+        if (request.getMesaIds() == null || request.getMesaIds().isEmpty()) {
+            throw new IllegalArgumentException("La reserva debe incluir al menos una mesa.");
         }
 
-        // 1. Validar Usuario
-        UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(userId);
-        if (usuario == null) {
-             throw new RuntimeException("Usuario con ID " + userId + " no encontrado.");
+        if (request.getFechaHora().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("No se puede crear una reserva en el pasado.");
         }
 
-        // 2. Validar Restaurante
-        RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(restauranteId);
+        // --- 2. VALIDACIÓN DE USUARIO (Con manejo de error Feign) ---
+        UsuarioDTO usuario = null;
+        try {
+            usuario = usuarioFeign.obtenerUsuarioPorId(request.getUsuarioId());
+        } catch (feign.FeignException.NotFound e) {
+            throw new IllegalArgumentException("Usuario con ID " + request.getUsuarioId() + " no encontrado.");
+        }
+
+        // --- 3. VALIDACIÓN DE RESTAURANTE ---
+        RestauranteDTO restaurante = restauranteFeign.obtenerRestaurantePorId(request.getRestauranteId());
         if (restaurante == null) {
-            throw new RuntimeException("Restaurante con ID " + restauranteId + " no encontrado.");
+            throw new IllegalArgumentException("Restaurante con ID " + request.getRestauranteId() + " no encontrado.");
         }
 
-        // 3. Validar que haya mesas seleccionadas
-        if (reserva.getMesasReservadas() == null || reserva.getMesasReservadas().isEmpty()) {
-             throw new RuntimeException("La reserva debe incluir al menos una mesa.");
+        // --- 4. CONSTRUCCIÓN DE LA ENTIDAD RESERVA ---
+        Reserva reserva = new Reserva();
+        reserva.setUsuarioId(request.getUsuarioId());
+        reserva.setRestauranteId(request.getRestauranteId());
+        reserva.setFechaHora(request.getFechaHora());
+        reserva.setCantidadPersonas(request.getCantidadPersonas());
+        reserva.setObservaciones(request.getObservaciones());
+        reserva.setTipo(request.getTipo() != null ? request.getTipo() : "NORMAL");
+        reserva.setEstado("PENDIENTE");
+        reserva.setFechaCreacion(LocalDateTime.now());
+
+        // --- 5. PROCESAMIENTO DE MESAS Y VALIDACIÓN DE CAPACIDAD ---
+        List<ReservaMesa> listaReservaMesa = new ArrayList<>();
+        int capacidadTotalSeleccionada = 0; 
+
+        for (Long mesaId : request.getMesaIds()) {
+            // Validar existencia y obtener datos de la mesa (necesitamos la capacidad)
+            MesaDTO mesa = restauranteFeign.obtenerMesaPorIdYRestaurante(request.getRestauranteId(), mesaId);
+            
+            if (mesa == null) {
+                throw new IllegalArgumentException("Mesa " + mesaId + " no existe o no pertenece al restaurante.");
+            }
+
+            // Sumar capacidad para validación
+            capacidadTotalSeleccionada += mesa.getCapacidad();
+
+            // Crear relación y vincular
+            ReservaMesa rm = new ReservaMesa();
+            rm.setMesaId(mesaId);
+            rm.setReserva(reserva); // 💡 Vinculación bidireccional importante para JPA
+            listaReservaMesa.add(rm);
         }
 
-        // --- LÓGICA DE NEGOCIO CENTRALIZADA ---
-        // Eliminamos el bucle 'for' redundante que había aquí.
-        // Ahora confiamos en tus métodos para validar y vincular las mesas.
+        // Asignar la lista a la reserva
+        reserva.setMesasReservadas(listaReservaMesa);
 
-        // Valida capacidad, horario y vincula (rm.setReserva)
-        validarCapacidadYHorario(reserva, restaurante);
-        
-        // Valida solapamiento de horarios
+        // 💡 VALIDACIÓN CRÍTICA: ¿Alcanzan las sillas?
+        if (capacidadTotalSeleccionada < request.getCantidadPersonas()) {
+            throw new IllegalArgumentException(
+                "Capacidad insuficiente. Las mesas seleccionadas suman " + capacidadTotalSeleccionada + 
+                " lugares, pero la reserva es para " + request.getCantidadPersonas() + " personas."
+            );
+        }
+
+        // --- 6. VALIDACIONES DE NEGOCIO (Horarios y Solapamiento) ---
+        // (Asumiendo que estos métodos existen en tu clase y aceptan la Entidad Reserva)
+        validarCapacidadYHorario(reserva, restaurante); 
         validarDisponibilidadPorSolapamiento(reserva.getMesasReservadas(), reserva.getFechaHora());
 
-        // 4. Completar datos de la reserva
-        reserva.setFechaCreacion(LocalDateTime.now());
-        if (reserva.getEstado() == null) {
-            reserva.setEstado("PENDIENTE"); 
-        }
-
+        // --- 7. GUARDADO EN BD ---
         Reserva reservaGuardada = reservaRepository.save(reserva);
 
-        // --- NOTIFICACIÓN (Email correcto) ---
-        String emailDestino;
-        String telefonoDestino;
+        // --- 8. NOTIFICACIÓN ASÍNCRONA (Resiliente) ---
+        try {
+            String emailDestino = (request.getEmailCliente() != null && !request.getEmailCliente().isEmpty())
+                    ? request.getEmailCliente()
+                    : usuario.getEmail();
+            
+            String telefonoDestino = usuario.getTelefono();
 
-        if (reserva.getEmailCliente() != null && !reserva.getEmailCliente().isEmpty()) {
-            emailDestino = reserva.getEmailCliente();
-            telefonoDestino = ""; 
-            System.out.println("📧 Usando email manual: " + emailDestino);
-        } else {
-            emailDestino = usuario.getEmail();
-            telefonoDestino = usuario.getTelefono();
-            System.out.println("📧 Usando email de usuario registrado: " + emailDestino);
+            ReservaHechaEvent event = new ReservaHechaEvent(
+                reservaGuardada.getId(),
+                restaurante.getNombre(),
+                reservaGuardada.getFechaHora(),
+                reservaGuardada.getCantidadPersonas(),
+                emailDestino,
+                telefonoDestino
+            );
+
+            rabbitTemplate.convertAndSend(
+                RabbitMQReservaConfig.EXCHANGE_NAME, 
+                RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
+                event
+            );
+            System.out.println("✅ Evento notificacion enviado a RabbitMQ");
+
+        } catch (Exception e) {
+            // Si falla RabbitMQ, NO fallamos la reserva, solo logueamos el error
+            System.err.println("⚠️ Error al enviar notificación: " + e.getMessage());
         }
-
-        ReservaHechaEvent event = new ReservaHechaEvent(
-            reservaGuardada.getId(),
-            restaurante.getNombre(),
-            reservaGuardada.getFechaHora(),
-            reservaGuardada.getCantidadPersonas(),
-            emailDestino,
-            telefonoDestino
-        );
-
-        rabbitTemplate.convertAndSend(
-            RabbitMQReservaConfig.EXCHANGE_NAME, 
-            RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
-            event
-        );
 
         return reservaGuardada;
     }

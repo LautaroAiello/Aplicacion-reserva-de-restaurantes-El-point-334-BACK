@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.services.ReservaService;
 import microservice.reserva_service.services.feign.UsuarioFeign;
+import microservice.reserva_service.services.dto.CrearReservaRequestDTO;
 import microservice.reserva_service.services.dto.ReservaResponseDTO;
 import microservice.reserva_service.services.dto.UsuarioDTO;
 
@@ -26,9 +27,9 @@ public class ReservaController {
     }
    
     @PostMapping
-    public ResponseEntity<Reserva> crearReserva(@RequestBody Reserva reserva,
+    public ResponseEntity<Reserva> crearReserva(@RequestBody CrearReservaRequestDTO request,
                                                 @RequestHeader(name = "Authorization", required = false) String authorization) {
-        Reserva nuevaReserva = reservaService.crearReserva(reserva);
+        Reserva nuevaReserva = reservaService.crearReserva(request);
         return new ResponseEntity<>(nuevaReserva, HttpStatus.CREATED);
     }
     
