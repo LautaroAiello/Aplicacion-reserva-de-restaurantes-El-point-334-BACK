@@ -265,14 +265,15 @@ public class ReservaService {
             
             String telefonoDestino = usuario.getTelefono();
 
-            ReservaHechaEvent event = new ReservaHechaEvent(
-                reservaGuardada.getId(),
-                restaurante.getNombre(),
-                reservaGuardada.getFechaHora(),
-                reservaGuardada.getCantidadPersonas(),
-                emailDestino,
-                telefonoDestino
-            );
+        ReservaHechaEvent event = new ReservaHechaEvent(
+            reservaGuardada.getId(),
+            restaurante.getNombre(),
+            reservaGuardada.getFechaHora(),
+            reservaGuardada.getCantidadPersonas(),
+            emailDestino,
+            telefonoDestino,
+            "PENDIENTE"
+        );
 
             rabbitTemplate.convertAndSend(
                 RabbitMQReservaConfig.EXCHANGE_NAME, 
@@ -306,8 +307,14 @@ public class ReservaService {
             
             reservaExistente.setEstado(nuevoEstado);
 
-            if (!"CONFIRMADA".equals(estadoAnterior) && "CONFIRMADA".equals(nuevoEstado)) {
-                enviarNotificacionConfirmacion(reservaExistente);
+            if (!nuevoEstado.equals(estadoAnterior)) {
+                if ("CONFIRMADA".equals(nuevoEstado) || 
+                    "RECHAZADA".equals(nuevoEstado) || 
+                    "CANCELADA".equals(nuevoEstado)) {
+                    
+                    // Llamamos al método genérico pasando el nuevo estado
+                    enviarNotificacionCambioEstado(reservaExistente, nuevoEstado);
+                }
             }
         }
 
@@ -321,6 +328,55 @@ public class ReservaService {
         }
 
         return reservaRepository.save(reservaExistente);
+    }
+
+    private void enviarNotificacionCambioEstado(Reserva reserva, String estadoNuevo) {
+        try {
+            String emailDestino = null;
+            String telefonoDestino = null;
+
+            // 1. Lógica de Email Manual vs App (Igual que tenías)
+            if (reserva.getEmailCliente() != null && !reserva.getEmailCliente().isEmpty()) {
+                emailDestino = reserva.getEmailCliente();
+            } else {
+                UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(reserva.getUsuarioId());
+                if (usuario != null) {
+                    emailDestino = usuario.getEmail();
+                    telefonoDestino = usuario.getTelefono();
+                }
+            }
+
+            if (emailDestino == null) return;
+
+            // 2. Obtener nombre restaurante
+            String nombreRestaurante = "Restaurante";
+            try {
+                RestauranteDTO rest = restauranteFeign.obtenerRestaurantePorId(reserva.getRestauranteId());
+                if (rest != null) nombreRestaurante = rest.getNombre();
+            } catch (Exception e) {}
+
+            // 3. Crear evento CON EL ESTADO NUEVO
+            ReservaHechaEvent event = new ReservaHechaEvent(
+                reserva.getId(),
+                nombreRestaurante,
+                reserva.getFechaHora(),
+                reserva.getCantidadPersonas(),
+                emailDestino,
+                telefonoDestino,
+                estadoNuevo // <--- PASAMOS EL ESTADO AQUÍ
+            );
+
+            // 4. Enviar
+            rabbitTemplate.convertAndSend(
+                RabbitMQReservaConfig.EXCHANGE_NAME, 
+                RabbitMQReservaConfig.RESERVATION_ROUTING_KEY,  
+                event
+            );
+            System.out.println("✅ Notificación de " + estadoNuevo + " enviada a: " + emailDestino);
+
+        } catch (Exception e) {
+            System.err.println("Error notificación: " + e.getMessage());
+        }
     }
 
     // Método auxiliar para notificar confirmaciones
@@ -353,7 +409,8 @@ public class ReservaService {
                 reserva.getFechaHora(),
                 reserva.getCantidadPersonas(),
                 emailDestino,
-                telefonoDestino
+                telefonoDestino,
+                "CONFIRMADA"
             );
 
             rabbitTemplate.convertAndSend(
@@ -588,19 +645,25 @@ public class ReservaService {
             dto.setEstado(reserva.getEstado());
             dto.setObservaciones(reserva.getObservaciones());
             dto.setUsuarioId(reserva.getUsuarioId());
-            
+            dto.setTipo(reserva.getTipo());
             // Llamada a Feign para obtener nombre del cliente
             // NOTA: Esto puede ser lento si hay muchas. En prod se cachea o se guarda el nombre en la reserva.
-            try {
-                // Usamos un token interno o asumimos que la llamada está permitida
-                UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(reserva.getUsuarioId()); 
-                if (usuario != null) {
-                    dto.setNombreCliente(usuario.getNombre());
-                    dto.setApellidoCliente(usuario.getApellido());
+           if (reserva.getNombreClienteManual() != null && !reserva.getNombreClienteManual().isEmpty()) {
+                dto.setNombreCliente(reserva.getNombreClienteManual());
+                dto.setApellidoCliente("(Manual)"); // Opcional: Para distinguir visualmente
+            } 
+            // 2. Es de App (Miramos en Auth Service)
+            else {
+                try {
+                    UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorId(reserva.getUsuarioId()); 
+                    if (usuario != null) {
+                        dto.setNombreCliente(usuario.getNombre());
+                        dto.setApellidoCliente(usuario.getApellido());
+                    }
+                } catch (Exception e) {
+                    dto.setNombreCliente("Usuario App");
+                    dto.setApellidoCliente("");
                 }
-            } catch (Exception e) {
-                dto.setNombreCliente("Usuario");
-                dto.setApellidoCliente("Desconocido (" + reserva.getUsuarioId() + ")");
             }
             
             // Mapear mesas

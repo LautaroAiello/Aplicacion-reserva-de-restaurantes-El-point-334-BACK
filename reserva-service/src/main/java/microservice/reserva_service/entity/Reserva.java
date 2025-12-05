@@ -16,6 +16,11 @@ public class Reserva {
 
     @Column(name = "usuario_id", nullable = false)
     private Long usuarioId;
+    
+    @Column(name = "nombre_cliente_manual")
+    private String nombreClienteManual;
+
+    
 
     @Column(name = "email_cliente")
     private String emailCliente;
@@ -70,6 +75,14 @@ public class Reserva {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public String getNombreClienteManual() {
+        return nombreClienteManual;
+    }
+
+    public void setNombreClienteManual(String nombreClienteManual) {
+        this.nombreClienteManual = nombreClienteManual;
     }
 
     public String getEmailCliente() {

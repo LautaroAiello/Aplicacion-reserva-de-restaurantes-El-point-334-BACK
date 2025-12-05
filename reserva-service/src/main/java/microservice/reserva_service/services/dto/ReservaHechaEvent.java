@@ -16,5 +16,6 @@ public class ReservaHechaEvent {
     private int numeroPersonas;
     private String emailUsuario;      // Destino de la notificación por email
     private String telefonoUsuario;   // Destino de la notificación por WhatsApp
-    
+    // --- CAMPO NUEVO ---
+    private String estadoNuevo; // "CONFIRMADA", "RECHAZADA", "CANCELADA"
 }

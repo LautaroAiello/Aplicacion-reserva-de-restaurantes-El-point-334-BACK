@@ -34,18 +34,30 @@ public class ReservaNotificationListener {
 
         // --- 1. INTENTO DE ENVÍO DE EMAIL (Con try-catch para Resiliencia) ---
         try {
-            // LLAMADA REAL A JAVAMAILSENDER (vía EmailService)
-            emailService.enviarConfirmacion(event); 
-            
-            // LOGGING DEL ÉXITO EN MONGODB
-            logExito(event, tipo, destinatario, asunto);
-            
-            System.out.println("✅ Notificación EMAIL enviada y logueada con éxito.");
+           switch (event.getEstadoNuevo()) {
+                case "CONFIRMADA":
+                    emailService.enviarConfirmacion(event);
+                    logExito(event, "EMAIL", event.getEmailUsuario(), "Confirmación Reserva");
+                    break;
+                
+                case "RECHAZADA":
+                    emailService.enviarRechazo(event);
+                    logExito(event, "EMAIL", event.getEmailUsuario(), "Rechazo Reserva");
+                    break;
+
+                case "CANCELADA":
+                    emailService.enviarCancelacion(event);
+                    logExito(event, "EMAIL", event.getEmailUsuario(), "Cancelación Reserva");
+                    break;
+
+                default:
+                    System.out.println("ℹ️ Estado " + event.getEstadoNuevo() + " no requiere email.");
+            }
 
         } catch (Exception e) {
             // LOGGING DEL FALLO: Captura cualquier error de envío
-            System.err.println("❌ ERROR al enviar correo para Reserva ID " + event.getReservaId() + ": " + e.getMessage());
-            logFallo(event, tipo, destinatario, asunto, e.getMessage());
+           System.err.println("❌ Error enviando email: " + e.getMessage());
+            logFallo(event, "EMAIL", event.getEmailUsuario(), "Error envio", e.getMessage());
         }
 
         // --- 2. Lógica para WhatsApp (si aplica) ---

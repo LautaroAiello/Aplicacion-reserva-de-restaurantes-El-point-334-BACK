@@ -63,17 +63,36 @@ public class EmailService {
         sendEmail(event.getEmailUsuario(), subject, body);
     }
 
-    /**
-     * Envía la cancelación de la reserva (para implementar a futuro).
-     */
-    public void enviarCancelacion(String emailUsuario, Long reservaId, String restauranteNombre) {
-        String subject = "❌ Reserva Cancelada en " + restauranteNombre;
+
+    public void enviarRechazo(ReservaHechaEvent event) {
+        String subject = "⚠️ Actualización sobre tu reserva en " + event.getRestauranteNombre();
         String body = String.format(
-            "Hola,\n\nLamentamos informarte que tu reserva (ID %d) en %s ha sido cancelada.\n\n" +
-            "Si no solicitaste esta cancelación, por favor, contacta al restaurante.",
-            reservaId,
-            restauranteNombre
+            "Hola,\n\n" +
+            "Lamentamos informarte que tu solicitud de reserva no ha podido ser aceptada en esta ocasión.\n" +
+            "-----------------------------------\n" +
+            "Restaurante: %s\n" +
+            "Fecha solicitada: %s\n" +
+            "-----------------------------------\n" +
+            "Por favor, intenta seleccionar otro horario o contáctanos directamente.\n\nSaludos.",
+            event.getRestauranteNombre(),
+            event.getFechaHora().toString()
         );
-        sendEmail(emailUsuario, subject, body);
+        sendEmail(event.getEmailUsuario(), subject, body);
+    }
+
+    public void enviarCancelacion(ReservaHechaEvent event) {
+        String subject = "❌ Reserva Cancelada: " + event.getRestauranteNombre();
+        String body = String.format(
+            "Hola,\n\n" +
+            "Te confirmamos que tu reserva ha sido CANCELADA.\n" +
+            "-----------------------------------\n" +
+            "Restaurante: %s\n" +
+            "ID Reserva: %d\n" +
+            "-----------------------------------\n" +
+            "Esperamos verte en otra oportunidad.",
+            event.getRestauranteNombre(),
+            event.getReservaId()
+        );
+        sendEmail(event.getEmailUsuario(), subject, body);
     }
 }

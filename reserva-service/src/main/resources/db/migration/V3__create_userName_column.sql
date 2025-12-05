@@ -1,0 +1,1 @@
+ALTER TABLE reserva ADD COLUMN nombre_cliente_manual VARCHAR(255);

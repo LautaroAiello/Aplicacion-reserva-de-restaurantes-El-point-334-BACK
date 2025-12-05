@@ -16,7 +16,7 @@ public class ReservaResponseDTO {
     private Long usuarioId;
     private String nombreCliente;
     private String apellidoCliente;
-    
+    private String tipo;
     // Datos de Mesas
     private List<Long> mesasIds; 
 }
