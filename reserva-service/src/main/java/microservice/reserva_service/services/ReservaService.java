@@ -215,6 +215,11 @@ public class ReservaService {
         reserva.setTipo(request.getTipo() != null ? request.getTipo() : "NORMAL");
         reserva.setEstado("PENDIENTE");
         reserva.setFechaCreacion(LocalDateTime.now());
+        // CORRECCIÓN 1: Guardar el email
+        reserva.setEmailCliente(request.getEmailCliente());
+
+        // 🔥 CORRECCIÓN 2: ¡ESTA ES LA LÍNEA QUE FALTABA! 🔥
+        reserva.setNombreClienteManual(request.getNombreClienteManual());
 
         // --- 5. PROCESAMIENTO DE MESAS Y VALIDACIÓN DE CAPACIDAD ---
         List<ReservaMesa> listaReservaMesa = new ArrayList<>();

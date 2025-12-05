@@ -14,4 +14,5 @@ public class CrearReservaRequestDTO {
     private String tipo;
     private List<Long> mesaIds; 
     private String emailCliente;
+    private String nombreClienteManual;
 }

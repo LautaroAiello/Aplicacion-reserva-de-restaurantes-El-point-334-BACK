@@ -3,11 +3,14 @@ package microservice.reserva_service.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "reserva_mesa", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"reserva_id", "mesa_id"}) // Mapea la restricción UNIQUE del SQL
 })
+@Getter @Setter
 public class ReservaMesa {
 
     @Id

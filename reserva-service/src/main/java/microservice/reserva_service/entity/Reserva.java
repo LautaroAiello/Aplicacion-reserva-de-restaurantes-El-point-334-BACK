@@ -6,9 +6,12 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "reserva")
+@Getter @Setter
 public class Reserva {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
