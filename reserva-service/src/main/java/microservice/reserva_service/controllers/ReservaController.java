@@ -1,5 +1,6 @@
 package microservice.reserva_service.controllers;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -11,6 +12,7 @@ import microservice.reserva_service.entity.Reserva;
 import microservice.reserva_service.services.ReservaService;
 import microservice.reserva_service.services.feign.UsuarioFeign;
 import microservice.reserva_service.services.dto.CrearReservaRequestDTO;
+import microservice.reserva_service.services.dto.MisReservasResponseDTO;
 import microservice.reserva_service.services.dto.ReservaResponseDTO;
 import microservice.reserva_service.services.dto.UsuarioDTO;
 
@@ -65,9 +67,9 @@ public class ReservaController {
 
     // GET /reservas/usuario/{usuarioId}
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<Reserva>> obtenerReservasPorUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<List<MisReservasResponseDTO>> obtenerReservasPorUsuario(@PathVariable Long usuarioId) {
         try {
-            java.util.List<Reserva> reservas = reservaService.obtenerReservasPorUsuario(usuarioId);
+            List<MisReservasResponseDTO> reservas = reservaService.obtenerReservasPorUsuario(usuarioId);
             return ResponseEntity.ok(reservas);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -76,20 +78,29 @@ public class ReservaController {
 
     // GET /reservas/mias -> obtiene usuario desde token y devuelve sus reservas
     @GetMapping("/mias")
-    public ResponseEntity<List<Reserva>> obtenerMisReservas(@RequestHeader(name = "Authorization", required = false) String authorization) {
+    public ResponseEntity<java.util.List<microservice.reserva_service.services.dto.MisReservasResponseDTO>> obtenerMisReservas(
+            @RequestHeader(name = "Authorization", required = false) String authorization
+    ) {
         try {
+            // 1. Validar Token
             if (authorization == null || !authorization.startsWith("Bearer ")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorToken(authorization);
+            // 2. Obtener Usuario desde Auth-Service
+            microservice.reserva_service.services.dto.UsuarioDTO usuario = usuarioFeign.obtenerUsuarioPorToken(authorization);
+            
             if (usuario == null || usuario.getId() == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            java.util.List<Reserva> reservas = reservaService.obtenerReservasPorUsuario(usuario.getId());
+            // 3. Llamar al servicio (que ahora devuelve DTOs con fotos y nombres)
+            java.util.List<microservice.reserva_service.services.dto.MisReservasResponseDTO> reservas = reservaService.obtenerReservasPorUsuario(usuario.getId());
+            
             return ResponseEntity.ok(reservas);
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -103,6 +114,18 @@ public class ReservaController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404
         }
     }
+
+    // GET http://localhost:8080/api/reserva/reservas/mesas-ocupadas?restauranteId=1&fechaHora=2025-12-05T20:00:00
+    @GetMapping("/mesas-ocupadas")
+    public ResponseEntity<List<Long>> obtenerMesasOcupadas(
+            @RequestParam Long restauranteId,
+            @RequestParam String fechaHora 
+    ) {
+        LocalDateTime fechaLocal = LocalDateTime.parse(fechaHora);
+        // El servicio calculará el rango -4h / +3h internamente
+        List<Long> ocupadas = reservaService.obtenerMesasOcupadas(restauranteId, fechaLocal);
+        return ResponseEntity.ok(ocupadas);
+    }
     
 
     //  ENDPOINTS DE MODIFICACIÓN Y ELIMINACIÓN 
@@ -115,6 +138,15 @@ public class ReservaController {
         } catch (NoSuchElementException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404
         }
+    }
+    //CANCELAR
+    @PutMapping("/{id}/cancelar")
+    public ResponseEntity<Void> cancelarReserva(
+            @PathVariable Long id,
+            @RequestParam Long usuarioId
+    ) {
+        reservaService.cancelarReserva(id, usuarioId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

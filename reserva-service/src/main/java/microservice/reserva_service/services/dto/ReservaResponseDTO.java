@@ -19,4 +19,7 @@ public class ReservaResponseDTO {
     private String tipo;
     // Datos de Mesas
     private List<Long> mesasIds; 
+
+    private String nombreRestaurante;
+    private String imagenRestauranteUrl;
 }

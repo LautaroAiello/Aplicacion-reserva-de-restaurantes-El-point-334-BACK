@@ -19,6 +19,8 @@ import microservice.reserva_service.services.feign.RestauranteFeign;
 import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.CrearReservaRequestDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
+import microservice.reserva_service.services.dto.MisReservasResponseDTO;
+import microservice.reserva_service.services.dto.ReservaCanceladaEvent;
 import microservice.reserva_service.services.dto.ReservaHechaEvent;
 import microservice.reserva_service.services.dto.ReservaResponseDTO;
 import microservice.reserva_service.services.dto.RestauranteDTO;
@@ -91,8 +93,43 @@ public class ReservaService {
         return reservaRepository.findAll();
     }
 
-    public java.util.List<Reserva> obtenerReservasPorUsuario(Long usuarioId) {
-        return reservaRepository.findByUsuarioId(usuarioId);
+    public java.util.List<microservice.reserva_service.services.dto.MisReservasResponseDTO> obtenerReservasPorUsuario(Long usuarioId) {
+        
+        // 1. Buscamos las reservas crudas en BD
+        java.util.List<microservice.reserva_service.entity.Reserva> reservas = reservaRepository.findByUsuarioId(usuarioId);
+
+        // 2. Las convertimos una por una
+        return reservas.stream().map(reserva -> {
+            microservice.reserva_service.services.dto.MisReservasResponseDTO dto = new microservice.reserva_service.services.dto.MisReservasResponseDTO();
+            
+            // Mapeo básico (Datos que YA tienes en Reserva)
+            dto.setId(reserva.getId());
+            dto.setRestauranteId(reserva.getRestauranteId());
+            dto.setUsuarioId(reserva.getUsuarioId());
+            dto.setFechaHora(reserva.getFechaHora());
+            dto.setCantidadPersonas(reserva.getCantidadPersonas());
+            dto.setEstado(reserva.getEstado());
+            dto.setTipo(reserva.getTipo());
+            dto.setObservaciones(reserva.getObservaciones());
+
+            // 3. LLAMADA A FEIGN (Para obtener Nombre e Imagen)
+            try {
+                // Llamamos al microservicio de Restaurante usando el ID
+                microservice.reserva_service.services.dto.RestauranteDTO rest = restauranteFeign.obtenerRestaurantePorId(reserva.getRestauranteId());
+                
+                if (rest != null) {
+                    dto.setRestauranteNombre(rest.getNombre());
+                    dto.setRestauranteImagenUrl(rest.getImagenUrl());
+                }
+            } catch (Exception e) {
+                // Si falla la conexión, ponemos valores por defecto para que no explote
+                dto.setRestauranteNombre("Restaurante (Info no disponible)");
+                dto.setRestauranteImagenUrl("assets/images/placeholder.jpg");
+                System.err.println("Error obteniendo info restaurante: " + e.getMessage());
+            }
+
+            return dto;
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     public Reserva obtenerPorId(Long id) {
@@ -479,6 +516,61 @@ public class ReservaService {
         reservaRepository.delete(reservaAEliminar);
     }
 
+    //CANCELAR RESERVA
+    @Transactional
+    public void cancelarReserva(Long reservaId, Long usuarioId) {
+        // 1. Buscar la reserva
+        Reserva reserva = reservaRepository.findById(reservaId)
+            .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
+
+        // 2. Seguridad: Validar que la reserva pertenezca al usuario que intenta cancelar
+        if (!reserva.getUsuarioId().equals(usuarioId)) {
+            throw new SecurityException("No tienes permiso para cancelar esta reserva.");
+        }
+
+        // 3. Validar estado actual
+        if ("CANCELADA".equals(reserva.getEstado())) {
+            throw new IllegalArgumentException("La reserva ya estaba cancelada.");
+        }
+
+        // 4. Cambiar Estado
+        reserva.setEstado("CANCELADA");
+        reservaRepository.save(reserva);
+
+        // 5. Notificación (Email de Cancelación)
+        try {
+            // Obtenemos el nombre del restaurante para el email (usando Feign)
+            // Si falla Feign, ponemos un nombre genérico para no romper la transacción
+            String nombreRestaurante = "el restaurante";
+            try {
+                RestauranteDTO rest = restauranteFeign.obtenerRestaurantePorId(reserva.getRestauranteId());
+                if (rest != null) nombreRestaurante = rest.getNombre();
+            } catch (Exception e) {
+                System.err.println("No se pudo obtener nombre restaurante para email: " + e.getMessage());
+            }
+
+            // Usamos el email del cliente (si fue manual) o buscamos el del usuario
+            String email = reserva.getEmailCliente(); 
+            if (email == null) {
+                 UsuarioDTO u = usuarioFeign.obtenerUsuarioPorId(usuarioId);
+                 email = u.getEmail();
+            }
+
+            ReservaCanceladaEvent event = new ReservaCanceladaEvent(reserva.getId(), email, nombreRestaurante);
+
+            // 💡 Asegúrate de tener una Routing Key para cancelaciones o usa la misma y que el Consumer distinga
+            // Por simplicidad, aquí enviamos al mismo exchange
+            rabbitTemplate.convertAndSend(
+                RabbitMQReservaConfig.EXCHANGE_NAME, 
+                "reserva.cancelada", // 💡 Necesitarás configurar este binding en tu Consumer o usar la default
+                event
+            );
+            
+        } catch (Exception e) {
+            System.err.println("Error enviando notificación de cancelación: " + e.getMessage());
+        }
+    }
+
     private void validarDisponibilidadPorSolapamiento(List<ReservaMesa> mesasReservadas, LocalDateTime fechaHora) {    
         List<Long> mesasIds = mesasReservadas.stream()
                 .map(ReservaMesa::getMesaId)
@@ -681,4 +773,10 @@ public class ReservaService {
         }).collect(Collectors.toList());
     }
 
+    public List<Long> obtenerMesasOcupadas(Long restauranteId, LocalDateTime fechaHora) {
+        LocalDateTime inicioRango = fechaHora.minusHours(4);
+        LocalDateTime finRango = fechaHora.plusHours(3);
+
+        return reservaRepository.findMesasOcupadasEnRango(restauranteId, inicioRango, finRango);
+    }
 }

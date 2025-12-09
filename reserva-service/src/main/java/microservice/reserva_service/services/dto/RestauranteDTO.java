@@ -10,7 +10,14 @@ public class RestauranteDTO {
     // private String direccion;
     private LocalTime horarioApertura;
     private LocalTime horarioCierre;
+    private String ImagenUrl;
     
+    public String getImagenUrl() {
+        return ImagenUrl;
+    }
+    public void setImagenUrl(String imagenUrl) {
+        ImagenUrl = imagenUrl;
+    }
     public LocalTime getHorarioApertura() {
         return horarioApertura;
     }
