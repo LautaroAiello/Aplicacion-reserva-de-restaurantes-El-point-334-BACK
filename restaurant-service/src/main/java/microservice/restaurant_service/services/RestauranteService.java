@@ -5,16 +5,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import microservice.restaurant_service.dto.DireccionDTO;
+import microservice.restaurant_service.dto.PlatoDTO;
 import microservice.restaurant_service.dto.RestauranteDTO;
 import microservice.restaurant_service.dto.UsuarioAdminCreationDTO;
 import microservice.restaurant_service.dto.UsuarioCreationDTO;
 import microservice.restaurant_service.dto.UsuarioDTO;
 import microservice.restaurant_service.entity.Direccion;
 import microservice.restaurant_service.entity.Favorito;
+import microservice.restaurant_service.entity.Plato;
 import microservice.restaurant_service.entity.Restaurante;
 import microservice.restaurant_service.feign.UsuarioFeign;
 import microservice.restaurant_service.repositories.RestauranteRepository;
 import microservice.restaurant_service.repositories.FavoritoRepository;
+import microservice.restaurant_service.repositories.PlatoRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,11 +29,13 @@ public class RestauranteService {
     private final RestauranteRepository restauranteRepository;
     private final UsuarioFeign usuarioFeign;
     private final FavoritoRepository favoritoRepository;
+    private final PlatoRepository platoRepository;
 
-    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign, FavoritoRepository favoritoRepository) {
+    public RestauranteService(RestauranteRepository restauranteRepository, UsuarioFeign usuarioFeign, FavoritoRepository favoritoRepository, PlatoRepository platoRepository) {
         this.restauranteRepository = restauranteRepository;
         this.usuarioFeign = usuarioFeign;
         this.favoritoRepository = favoritoRepository;
+        this.platoRepository = platoRepository;
     }
 
     // 1. Listar todos los restaurantes (DTO)
@@ -92,10 +97,30 @@ public class RestauranteService {
             
             configDTO.setTiempoAnticipacionMinutos(configEntidad.getTiempoAnticipacionMinutos());
             configDTO.setMinPersonasEventoLargo(configEntidad.getMinPersonasEventoLargo());
-            // Mapear otros campos si existen en el DTO
-            
+            configDTO.setMostrarPrecios(configEntidad.getMostrarPrecios());
             dto.setConfiguracion(configDTO);
         }
+
+        List<Plato> platos = platoRepository.findByRestauranteId(restaurante.getId());
+        List<PlatoDTO> menuDTO = platos.stream().map(plato -> {
+            PlatoDTO pDto = new PlatoDTO();
+            pDto.setId(plato.getId());
+            pDto.setNombre(plato.getNombre());
+            pDto.setDescripcion(plato.getDescripcion());
+            pDto.setPrecio(plato.getPrecio());
+            pDto.setImagenUrl(plato.getImagenUrl());
+            pDto.setEstado(plato.getEstado());
+        
+            // Mapeo seguro de categoría
+            if (plato.getCategoriaPlato() != null) {
+                pDto.setNombreCategoria(plato.getCategoriaPlato().getNombre()); // Asumiendo que CategoriaPlato tiene getNombre()
+            } else {
+                pDto.setNombreCategoria("General");
+            }
+            return pDto;
+        }).collect(Collectors.toList());
+
+        dto.setMenu(menuDTO);
         
         return dto;
     }
@@ -231,6 +256,7 @@ public class RestauranteService {
             // Actualizamos los campos SOBRE la instancia existente
             config.setTiempoAnticipacionMinutos(configDTO.getTiempoAnticipacionMinutos());
             config.setMinPersonasEventoLargo(configDTO.getMinPersonasEventoLargo());
+            config.setMostrarPrecios(configDTO.getMostrarPrecios());
             // Mapear otros campos de configuración si existen en tu DTO/Entidad
         }
 

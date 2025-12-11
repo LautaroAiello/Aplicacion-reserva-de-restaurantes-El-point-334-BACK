@@ -3,7 +3,14 @@ package microservice.restaurant_service.dto;
 public class ConfiguracionRestauranteDTO {
     private Integer tiempoAnticipacionMinutos;
     private Integer minPersonasEventoLargo;
+    private Boolean mostrarPrecios;
     
+    public Boolean getMostrarPrecios() {
+        return mostrarPrecios;
+    }
+    public void setMostrarPrecios(Boolean mostrarPrecios) {
+        this.mostrarPrecios = mostrarPrecios;
+    }
     public Integer getTiempoAnticipacionMinutos() {
         return tiempoAnticipacionMinutos;
     }

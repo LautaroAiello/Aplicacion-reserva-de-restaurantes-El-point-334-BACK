@@ -14,6 +14,14 @@ public class RestauranteDTO {
     private String imagenUrl;
     private ConfiguracionRestauranteDTO configuracion;
 
+    private java.util.List<PlatoDTO> menu;
+
+    public java.util.List<PlatoDTO> getMenu() {
+        return menu;
+    }
+    public void setMenu(java.util.List<PlatoDTO> menu) {
+        this.menu = menu;
+    }
     public String getImagenUrl() {
         return imagenUrl;
     }
