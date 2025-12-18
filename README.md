@@ -1,125 +1,89 @@
-🍽️ Sistema de Gestión y Reservas de Restaurantes (Backend)
+# 🍽️ Sistema de Gestión y Reservas de Restaurantes (Backend)
 
-Este repositorio contiene el código fuente del backend de una plataforma distribuida para la gestión integral de restaurantes y reservas en tiempo real. Construido con una arquitectura de microservicios escalable, prioriza la consistencia de datos, la seguridad y la eficiencia operativa.
+Backend de una plataforma distribuida para la **gestión integral de restaurantes y reservas en tiempo real**.  
+El sistema está construido con una **arquitectura de microservicios escalable**, priorizando la consistencia de datos, la seguridad y la eficiencia operativa.
 
-🚀 Características Principales
+---
 
-Arquitectura Distribuida: Sistema modular basado en microservicios independientes.
+## 🚀 Características Principales
 
-Gestión de Transacciones Distribuidas: Implementación de patrones para garantizar la integridad de datos entre servicios (ej: Creación de Restaurante + Admin).
+- Arquitectura distribuida basada en microservicios independientes.
+- Gestión de transacciones distribuidas para garantizar la integridad de datos  
+  (ej. creación de Restaurante + Usuario Administrador).
+- Comunicación híbrida entre servicios:
+  - **Síncrona**: OpenFeign para consultas directas y operaciones bloqueantes.
+  - **Asíncrona**: RabbitMQ para procesos desacoplados como notificaciones y envío de emails.
+- Seguridad robusta con Spring Security y JWT (JSON Web Tokens):
+  - Autenticación y autorización centralizada.
+  - Manejo de roles: `ADMIN`, `GESTOR`, `CLIENTE`.
+- Persistencia políglota:
+  - PostgreSQL para datos transaccionales.
+  - MongoDB para logs de auditoría y notificaciones.
+- Service Discovery & Routing con Eureka Server y Spring Cloud Gateway.
 
-Comunicación Híbrida:
+---
 
-Síncrona (Feign Clients): Para operaciones bloqueantes y consultas directas entre servicios.
+## 🛠️ Tech Stack
 
-Asíncrona (RabbitMQ): Para procesos desacoplados como el envío de notificaciones y correos electrónicos.
+- **Lenguaje**: Java 17  
+- **Framework**: Spring Boot 3  
+- **Bases de Datos**: PostgreSQL, MongoDB  
+- **Mensajería**: RabbitMQ  
+- **Seguridad**: Spring Security, JWT (jjwt)  
+- **Infraestructura**: Docker, Docker Compose, Spring Cloud  
+- **Herramientas**: Maven, Postman, Lombok  
 
-Seguridad Robusta: Autenticación y autorización centralizada mediante Spring Security y JWT (JSON Web Tokens) con manejo de roles (ADMIN, GESTOR, CLIENTE).
+---
 
-Persistencia Políglota: Uso de PostgreSQL para datos transaccionales y MongoDB para logs de auditoría y notificaciones.
+## 🏗️ Arquitectura de Microservicios
 
-Service Discovery & Routing: Orquestación dinámica con Eureka Server y Spring Cloud Gateway.
+| Servicio             | Puerto | Descripción |
+|----------------------|--------|-------------|
+| API Gateway          | 8080   | Punto de entrada único. Enrutamiento y CORS |
+| Eureka Server        | 8761   | Registro y descubrimiento de servicios |
+| Auth Service         | 8081   | Gestión de usuarios, roles y JWT |
+| Restaurant Service   | 8082   | Restaurantes, mesas, menú y configuración |
+| Reserva Service      | 8083   | Lógica core de reservas |
+| Notification Service | 8084   | Envío de emails y notificaciones |
 
-🛠️ Tech Stack
+---
 
-Lenguaje: Java 17
+## ⚙️ Instalación y Ejecución
 
-Framework: Spring Boot 3
+### Prerrequisitos
 
-Bases de Datos: PostgreSQL, MongoDB
+- Java 17 JDK  
+- Docker y Docker Compose (recomendado)  
+- Maven  
 
-Mensajería: RabbitMQ
+### Pasos para levantar el entorno
 
-Seguridad: Spring Security, JWT (jjwt)
-
-Infraestructura: Docker (Contenerización de servicios y BDs), Spring Cloud (Gateway, Eureka, OpenFeign)
-
-Herramientas: Maven, Postman (Testing de API), Lombok
-
-🏗️ Arquitectura de Microservicios
-
-El sistema está compuesto por los siguientes servicios:
-
-Servicio
-
-Puerto
-
-Descripción
-
-API Gateway
-
-8080
-
-Punto de entrada único. Enruta peticiones y maneja CORS.
-
-Eureka Server
-
-8761
-
-Registro y descubrimiento de servicios.
-
-Auth Service
-
-8081
-
-Gestión de usuarios, roles y generación/validación de tokens JWT.
-
-Restaurant Service
-
-8082
-
-Catálogo de restaurantes, mesas, menú y configuración.
-
-Reserva Service
-
-8083
-
-Lógica core de reservas, validación de disponibilidad y horarios.
-
-Notification Service
-
-8084
-
-Envío de emails (Gmail SMTP) y registro de notificaciones.
-
-⚙️ Instalación y Ejecución
-
-Prerrequisitos
-
-Java 17 JDK
-
-Docker & Docker Compose (Recomendado para BDs y RabbitMQ)
-
-Maven
-
-Pasos para levantar el entorno
-
-Clonar el repositorio:
-
-git clone [https://github.com/tu-usuario/reservas-restaurante-back.git](https://github.com/tu-usuario/reservas-restaurante-back.git)
-cd reservas-restaurante-back
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/tu-usuario/reservas-restaurante-back.git
+   cd reservas-restaurante-back
 
 
-Levantar infraestructura (Docker):
+2. **Levantar infraestructura (Docker):**
 Asegúrate de tener corriendo los contenedores necesarios (Postgres, Mongo, RabbitMQ).
 
 docker-compose up -d
-
+ 
 
 Configuración:
 
-Revisar los archivos application.properties de cada servicio para asegurar que las credenciales de base de datos y RabbitMQ coincidan con tu entorno local.
+- Revisar los archivos application.properties de cada servicio para asegurar que las credenciales de base de datos y RabbitMQ coincidan con tu entorno local.
+- Verificar credenciales de bases de datos y RabbitMQ.
+- Configurar la App Password de Gmail en notification-service para el envío de correos.
 
-Configurar la App Password de Gmail en notification-service para el envío de correos.
-
-Compilar y Ejecutar:
+Compilar y Ejecutar los servicios:
 Se recomienda iniciar los servicios en el siguiente orden:
 
-Eureka Server
+1. Eureka Server
 
-API Gateway
+2. API Gateway
 
-Auth Service, Restaurant Service, Reserva Service, Notification Service (en cualquier orden).
+3. Auth Service, Restaurant Service, Reserva Service, Notification Service
 
 # Ejemplo para un servicio
 cd auth-service
@@ -128,42 +92,41 @@ mvn spring-boot:run
 
 🔌 Endpoints Principales
 
-Todos los endpoints son accesibles a través del API Gateway (http://localhost:8080).
+Todos los endpoints son accesibles a través del API Gateway
+📍 http://localhost:8080
 
-Autenticación (/api/auth)
+🔐 Autenticación (/api/auth)
 
-POST /login: Iniciar sesión (Devuelve JWT + Roles).
+POST /login – Iniciar sesión (JWT + roles)
 
-POST /usuarios: Registrar nuevo cliente.
+POST /usuarios – Registrar nuevo cliente
 
-GET /usuarios/me: Obtener perfil del usuario actual (Requiere Token).
+GET /usuarios/me – Obtener perfil del usuario autenticado
 
-Restaurantes (/api/restaurant)
+🍴 Restaurantes (/api/restaurant)
 
-GET /restaurantes: Listar todos los restaurantes.
+GET /restaurantes – Listar restaurantes
 
-POST /restaurantes: Crear restaurante (SAGA: Crea local + Usuario Admin).
+POST /restaurantes – Crear restaurante
+(SAGA: Restaurante + Usuario Admin)
 
-GET /restaurantes/{id}/menu: Ver menú público.
+GET /restaurantes/{id}/menu – Ver menú público
 
-POST /restaurantes/{id}/mesas: Gestión de mesas (Solo Admin).
+POST /restaurantes/{id}/mesas – Gestión de mesas (Admin)
 
-Reservas (/api/reserva)
+📅 Reservas (/api/reserva)
 
-POST /reservas: Crear nueva reserva (Valida disponibilidad).
+POST /reservas – Crear reserva
 
-GET /reservas/mias: Ver historial de reservas del usuario.
+GET /reservas/mias – Historial de reservas del usuario
 
-PUT /reservas/{id}: Confirmar/Rechazar reserva (Dispara notificación).
+PUT /reservas/{id} – Confirmar / Rechazar reserva (dispara notificación)
 
-👥 Equipo de Desarrollo
+👥 Equipo de Desarrollo  
 
 Este proyecto fue desarrollado como Trabajo Final de la carrera de Desarrollo de Software.
 
-Lautaro Aiello - Backend & DevOps Architect - GitHub
+Lautaro Aiello - FullStack - GitHub
 
-[Nombre de tu compañero] - Frontend Developer & Integración
+Santiago Cacciabue - FullStack - GitHub
 
-📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo LICENSE para más detalles.
