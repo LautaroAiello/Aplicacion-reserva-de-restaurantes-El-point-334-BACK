@@ -38,6 +38,14 @@ public class RestauranteDTO {
     private String telefonoUsuario;
     private boolean esFavorito;
 
+    private Long cantidadReservas;
+
+    public Long getCantidadReservas() {
+        return cantidadReservas;
+    }
+    public void setCantidadReservas(Long cantidadReservas) {
+        this.cantidadReservas = cantidadReservas;
+    }
     public boolean isEsFavorito() {
         return esFavorito;
     }

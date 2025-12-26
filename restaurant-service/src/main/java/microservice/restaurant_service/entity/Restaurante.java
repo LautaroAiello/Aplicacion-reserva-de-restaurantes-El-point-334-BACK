@@ -62,4 +62,7 @@ public class Restaurante {
     @OneToMany(mappedBy = "restaurante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
     private Set<Plato> platos;
+
+    @Column(name = "cantidad_reservas")
+    private Long cantidadReservas = 0L;
 }
