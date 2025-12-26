@@ -73,6 +73,7 @@ public class RestauranteService {
         dto.setHorarioApertura(restaurante.getHorarioApertura());
         dto.setHorarioCierre(restaurante.getHorarioCierre());
         dto.setImagenUrl(restaurante.getImagenUrl());
+        dto.setCantidadReservas(restaurante.getCantidadReservas());
         
         // Mapear Dirección
         if (restaurante.getDireccion() != null) {
@@ -367,6 +368,21 @@ public List<RestauranteDTO> obtenerMasPopulares(int limite, Long usuarioId) {
     // Eliminar gestor: llama al auth-service a través de Feign
     public void eliminarGestor(Long restauranteId, Long usuarioId) {
         usuarioFeign.eliminarGestor(restauranteId, usuarioId);
+    }
+
+    @Transactional
+    public void incrementarContadorReservas(Long id) {
+        Restaurante restaurante = restauranteRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Restaurante no encontrado"));
+        
+        // Obtenemos el valor actual (o 0 si es nulo)
+        Long cantidadActual = restaurante.getCantidadReservas() == null ? 0L : restaurante.getCantidadReservas();
+        
+        // Sumamos 1
+        restaurante.setCantidadReservas(cantidadActual + 1);
+        
+        // Guardamos
+        restauranteRepository.save(restaurante);
     }
 
 }

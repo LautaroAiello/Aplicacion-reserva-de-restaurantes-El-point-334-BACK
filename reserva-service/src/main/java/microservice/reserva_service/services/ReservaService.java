@@ -329,6 +329,14 @@ public class ReservaService {
             System.err.println("⚠️ Error al enviar notificación: " + e.getMessage());
         }
 
+        try {
+            restauranteFeign.incrementarReservas(reservaGuardada.getRestauranteId());
+        } catch (Exception e) {
+            // Importante: Usamos try-catch para que si falla el contador (ej. timeout),
+            // la reserva NO se caiga. El cliente igual reservó.
+            System.err.println("No se pudo incrementar el contador de popularidad: " + e.getMessage());
+        }
+
         return reservaGuardada;
     }
 

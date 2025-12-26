@@ -103,6 +103,12 @@ public class RestauranteController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{id}/incrementar-reservas")
+    public ResponseEntity<Void> incrementarReservas(@PathVariable Long id) {
+        restauranteService.incrementarContadorReservas(id);
+        return ResponseEntity.ok().build();
+    }
     // @PutMapping("/{id}")
     // public ResponseEntity<Restaurante> actualizarRestaurante(@PathVariable Long id, @RequestBody Restaurante restauranteDetalles) {
     //     try {

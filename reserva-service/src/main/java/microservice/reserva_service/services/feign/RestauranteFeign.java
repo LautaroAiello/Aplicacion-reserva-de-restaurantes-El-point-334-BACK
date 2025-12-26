@@ -3,6 +3,7 @@ package microservice.reserva_service.services.feign;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import microservice.reserva_service.services.dto.ConfiguracionRestauranteDTO;
 import microservice.reserva_service.services.dto.MesaDTO;
@@ -25,4 +26,7 @@ public interface RestauranteFeign {
 
     @GetMapping("/restaurantes/{id}/configuracion")
     ConfiguracionRestauranteDTO obtenerConfiguracionPorRestauranteId(@PathVariable("id") Long id);
+
+    @PutMapping("/api/restaurante/{id}/incrementar-reservas")
+    void incrementarReservas(@PathVariable("id") Long id);
 }
